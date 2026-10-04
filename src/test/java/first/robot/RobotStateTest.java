@@ -2,10 +2,8 @@ package first.robot;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wpilib.units.Units.MetersPerSecond;
 
-import first.robot.generated.TunerConstants;
-import first.robot.mechanisms.drive.SwerveConfig;
+import first.robot.constants.RobotConfigs;
 import first.robot.testing.SimTestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,13 +20,7 @@ class RobotStateTest {
     @BeforeEach
     void setUp() {
         SimTestUtil.setUp();
-        var config = SwerveConfig.create(
-                TunerConstants.DrivetrainConstants,
-                TunerConstants.FrontLeft,
-                TunerConstants.FrontRight,
-                TunerConstants.BackLeft,
-                TunerConstants.BackRight,
-                TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+        var config = RobotConfigs.COMP.drive();
         robotState = new RobotState(config.kinematics(), config.moduleCount());
     }
 

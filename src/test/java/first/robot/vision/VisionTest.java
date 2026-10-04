@@ -1,11 +1,9 @@
 package first.robot.vision;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wpilib.units.Units.MetersPerSecond;
 
 import first.robot.RobotState;
-import first.robot.generated.TunerConstants;
-import first.robot.mechanisms.drive.SwerveConfig;
+import first.robot.constants.RobotConfigs;
 import first.robot.testing.SimTestUtil;
 import first.robot.vision.VisionIO.PoseObservation;
 import java.util.Arrays;
@@ -41,13 +39,7 @@ class VisionTest {
     @BeforeEach
     void setUp() {
         SimTestUtil.setUp();
-        var config = SwerveConfig.create(
-                TunerConstants.DrivetrainConstants,
-                TunerConstants.FrontLeft,
-                TunerConstants.FrontRight,
-                TunerConstants.BackLeft,
-                TunerConstants.BackRight,
-                TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+        var config = RobotConfigs.COMP.drive();
         robotState = new RobotState(config.kinematics(), config.moduleCount());
         camera = new FakeCamera();
         var info = new CameraInfo("Test", "TestCam", new Transform3d(), 1.0);

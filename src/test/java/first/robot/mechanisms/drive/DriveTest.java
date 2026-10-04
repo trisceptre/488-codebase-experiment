@@ -3,11 +3,10 @@ package first.robot.mechanisms.drive;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wpilib.units.Units.MetersPerSecond;
 
 import first.robot.LoopParticipant;
 import first.robot.RobotState;
-import first.robot.generated.TunerConstants;
+import first.robot.constants.RobotConfigs;
 import first.robot.testing.SimTestUtil;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -33,13 +32,7 @@ class DriveTest {
         SimTestUtil.setUp();
         scheduler.cancelAll();
         setAlliance(AllianceStationID.BLUE_1);
-        var config = SwerveConfig.create(
-                TunerConstants.DrivetrainConstants,
-                TunerConstants.FrontLeft,
-                TunerConstants.FrontRight,
-                TunerConstants.BackLeft,
-                TunerConstants.BackRight,
-                TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+        var config = RobotConfigs.COMP.drive();
         io = new FakeDriveIO(config);
         robotState = new RobotState(config.kinematics(), config.moduleCount());
         drive = new Drive(config, io, robotState);
@@ -132,16 +125,6 @@ class DriveTest {
     void wheelRadiusCharacterizationRecoversConfiguredRadius() {
         SimTestUtil.schedule(scheduler, drive.wheelRadiusCharacterization());
         loops(150);
-        assertEquals(
-                SwerveConfig.create(
-                                TunerConstants.DrivetrainConstants,
-                                TunerConstants.FrontLeft,
-                                TunerConstants.FrontRight,
-                                TunerConstants.BackLeft,
-                                TunerConstants.BackRight,
-                                TunerConstants.kSpeedAt12Volts.in(MetersPerSecond))
-                        .wheelRadiusMeters(),
-                drive.getWheelRadiusEstimateMeters(),
-                1e-3);
+        assertEquals(RobotConfigs.COMP.drive().wheelRadiusMeters(), drive.getWheelRadiusEstimateMeters(), 1e-3);
     }
 }
