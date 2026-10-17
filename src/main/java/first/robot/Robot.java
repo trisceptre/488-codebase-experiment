@@ -16,6 +16,7 @@ import first.robot.game.GameMechanisms;
 import first.robot.game.ShotCalculator;
 import first.robot.game.StatusLights;
 import first.robot.opmodes.teleop.TeleopBindings;
+import first.robot.sim.FuelSim;
 import first.robot.subsystems.drive.Drive;
 import first.robot.subsystems.drive.DriveIO;
 import first.robot.subsystems.drive.DriveIOCTRE;
@@ -54,6 +55,7 @@ public class Robot extends LoggedRobot {
     private final List<LoopParticipant> loopOrder;
     private final DriveIOCTRESim driveSim;
     private final VisionSystemSim visionSim;
+    private final Optional<FuelSim> fuelSim;
 
     public Robot() {
         Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -164,6 +166,10 @@ public class Robot extends LoggedRobot {
                                 Lights.allianceColor())))
                         .withName("Lights.Status")));
 
+        fuelSim = Constants.currentMode == Constants.Mode.SIM && driveSim != null
+                ? mechanisms.map(mech -> new FuelSim(config.drive(), mech, driveSim::truePose))
+                : Optional.empty();
+
         boolean offsetsMissing = config.drive().modules().stream().anyMatch(m -> m.EncoderOffset == 0.0);
         new Alert("CANcoder offsets not set in TunerConstants", Alert.AlertType.kError)
                 .set(Constants.currentMode == Constants.Mode.REAL && offsetsMissing);
@@ -206,5 +212,6 @@ public class Robot extends LoggedRobot {
         if (visionSim != null && driveSim != null) {
             visionSim.update(driveSim.truePose());
         }
+        fuelSim.ifPresent(FuelSim::update);
     }
 }
