@@ -10,5 +10,5 @@ public interface LightsIO {
 
     default void updateInputs(LightsIOInputs inputs) {}
 
-    default void apply(LightPattern pattern) {}
+    default void apply(int segment, LightPattern pattern) {}
 }

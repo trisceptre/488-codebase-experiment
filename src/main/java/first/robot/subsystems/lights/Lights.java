@@ -7,17 +7,23 @@ import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import first.robot.LoopParticipant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public final class Lights implements Subsystem, LoopParticipant, AutoCloseable {
     private final LightsIO io;
     private final LightsIOInputsAutoLogged inputs = new LightsIOInputsAutoLogged();
     private final Alert disconnectedAlert = new Alert("Lights controller disconnected", Alert.AlertType.kInfo);
-    private LightPattern pattern = new LightPattern.Off();
-    private LightPattern sent = null;
+    private final LightPattern[] patterns;
+    private final LightPattern[] sent;
 
-    public Lights(LightsIO io) {
+    public Lights(LightsIO io, int segmentCount) {
         this.io = io;
+        patterns = new LightPattern[segmentCount];
+        sent = new LightPattern[segmentCount];
+        Arrays.fill(patterns, new LightPattern.Off());
         register();
         setDefaultCommand(idle());
     }
@@ -27,31 +33,46 @@ public final class Lights implements Subsystem, LoopParticipant, AutoCloseable {
         return "Lights";
     }
 
+    public int segmentCount() {
+        return patterns.length;
+    }
+
     public Command idle() {
-        return run(() -> pattern = new LightPattern.Larson(allianceColor())).withName("Lights.Alliance");
+        return show(() -> List.of(new LightPattern.Larson(allianceColor()))).withName("Lights.Alliance");
     }
 
     public Command solid(Color color) {
-        return show(new LightPattern.Solid(color), "Lights.Solid");
+        return showAll(new LightPattern.Solid(color), "Lights.Solid");
     }
 
     public Command larson(Color color) {
-        return show(new LightPattern.Larson(color), "Lights.Larson");
+        return showAll(new LightPattern.Larson(color), "Lights.Larson");
     }
 
     public Command blink(Color color, double hz) {
-        return show(new LightPattern.Blink(color, hz), "Lights.Blink");
+        return showAll(new LightPattern.Blink(color, hz), "Lights.Blink");
     }
 
-    public LightPattern current() {
-        return pattern;
+    public Command show(Supplier<List<LightPattern>> segments) {
+        return run(() -> {
+                    List<LightPattern> shown = segments.get();
+                    for (int i = 0; i < patterns.length; i++) {
+                        patterns[i] = shown.get(Math.min(i, shown.size() - 1));
+                    }
+                })
+                .ignoringDisable(true)
+                .withName("Lights.Show");
     }
 
-    private Command show(LightPattern shown, String name) {
-        return run(() -> pattern = shown).withName(name);
+    public LightPattern current(int segment) {
+        return patterns[segment];
     }
 
-    private static Color allianceColor() {
+    private Command showAll(LightPattern shown, String name) {
+        return show(() -> List.of(shown)).withName(name);
+    }
+
+    public static Color allianceColor() {
         return DriverStation.getAlliance()
                 .map(a -> a == Alliance.Red ? Color.kRed : Color.kBlue)
                 .orElse(Color.kWhite);
@@ -65,11 +86,13 @@ public final class Lights implements Subsystem, LoopParticipant, AutoCloseable {
 
     @Override
     public void applyOutputs() {
-        if (!pattern.equals(sent)) {
-            io.apply(pattern);
-            sent = pattern;
+        for (int i = 0; i < patterns.length; i++) {
+            if (!patterns[i].equals(sent[i])) {
+                io.apply(i, patterns[i]);
+                sent[i] = patterns[i];
+            }
+            Logger.recordOutput("Lights/Segment" + i, patterns[i].toString());
         }
-        Logger.recordOutput("Lights/Pattern", pattern.toString());
     }
 
     @Override

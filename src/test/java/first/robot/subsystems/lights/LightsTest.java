@@ -22,12 +22,14 @@ class LightsTest {
     void setUp() {
         SimTestUtil.setUp();
         SimTestUtil.resetScheduler(scheduler);
-        lights = new Lights(new LightsIO() {
-            @Override
-            public void apply(LightPattern pattern) {
-                applied.add(pattern);
-            }
-        });
+        lights = new Lights(
+                new LightsIO() {
+                    @Override
+                    public void apply(int segment, LightPattern pattern) {
+                        applied.add(pattern);
+                    }
+                },
+                3);
     }
 
     @AfterEach
@@ -48,18 +50,29 @@ class LightsTest {
         DriverStationSim.setAllianceStationId(AllianceStationID.Red2);
         DriverStationSim.notifyNewData();
         loops(2);
-        assertEquals(new LightPattern.Larson(Color.kRed), lights.current());
+        assertEquals(new LightPattern.Larson(Color.kRed), lights.current(2));
     }
 
     @Test
     void commandOverridesDefaultAndOnlyChangesAreSent() {
         SimTestUtil.schedule(scheduler, lights.solid(Color.kWhite));
         loops(5);
-        assertEquals(new LightPattern.Solid(Color.kWhite), lights.current());
+        assertEquals(new LightPattern.Solid(Color.kWhite), lights.current(0));
         assertEquals(
-                1,
+                3,
                 applied.stream()
                         .filter(p -> p.equals(new LightPattern.Solid(Color.kWhite)))
                         .count());
+    }
+
+    @Test
+    void eachSegmentShowsItsOwnPatternAndShortListsRepeatTheLast() {
+        var a = new LightPattern.Solid(Color.kGreen);
+        var b = new LightPattern.Blink(Color.kRed, 1.0);
+        SimTestUtil.schedule(scheduler, lights.show(() -> List.of(a, b)));
+        loops(2);
+        assertEquals(a, lights.current(0));
+        assertEquals(b, lights.current(1));
+        assertEquals(b, lights.current(2));
     }
 }
