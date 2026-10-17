@@ -16,6 +16,7 @@ public record MotorConfig(
         Gains gains,
         CurrentLimits currentLimits,
         Optional<SoftLimits> softLimits,
+        Shaping shaping,
         SimModel simModel) {
 
     public MotorConfig {
@@ -32,6 +33,7 @@ public record MotorConfig(
         Objects.requireNonNull(gains, "gains");
         Objects.requireNonNull(currentLimits, "currentLimits");
         Objects.requireNonNull(softLimits, "softLimits");
+        Objects.requireNonNull(shaping, "shaping");
         Objects.requireNonNull(simModel, "simModel");
     }
 
@@ -45,7 +47,32 @@ public record MotorConfig(
 
     public record Gains(double kS, double kV, double kA, double kG, double kP, double kD, GravityType gravityType) {}
 
-    public record CurrentLimits(double supplyAmps, double statorAmps) {}
+    public record CurrentLimits(
+            double supplyAmps, double statorAmps, double supplyLowerAmps, double supplyLowerSeconds) {
+        public CurrentLimits(double supplyAmps, double statorAmps) {
+            this(supplyAmps, statorAmps, 0.0, 0.0);
+        }
+    }
+
+    public record Shaping(double rampSeconds, Optional<MotionMagic> motionMagic) {
+        public static final Shaping NONE = new Shaping(0.0, Optional.empty());
+
+        public static Shaping ramp(double seconds) {
+            return new Shaping(seconds, Optional.empty());
+        }
+
+        public static Shaping motionMagic(double cruiseRadPerSec, double accelRadPerSecSq) {
+            return new Shaping(0.0, Optional.of(new MotionMagic(cruiseRadPerSec, accelRadPerSecSq)));
+        }
+    }
+
+    public record MotionMagic(double cruiseRadPerSec, double accelRadPerSecSq) {
+        public MotionMagic {
+            if (!(cruiseRadPerSec > 0.0) || !(accelRadPerSecSq > 0.0)) {
+                throw new IllegalArgumentException("Motion Magic cruise and acceleration must be > 0");
+            }
+        }
+    }
 
     public record SoftLimits(double minRad, double maxRad) {
         public SoftLimits {

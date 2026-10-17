@@ -30,6 +30,7 @@ class VelocityControlTest {
                 new MotorConfig.Gains(0.0, 0.12, 0.0, 0.0, 0.3, 0.0, MotorConfig.GravityType.NONE),
                 new MotorConfig.CurrentLimits(60, 120),
                 Optional.empty(),
+                MotorConfig.Shaping.NONE,
                 new MotorConfig.SimModel.Flywheel(DCMotor.getKrakenX60(1), 0.004));
         io = new MotorIOSim(config);
         flywheel = new VelocityControl(config, io, RPM.of(50));
@@ -74,6 +75,22 @@ class VelocityControlTest {
         loops(1);
         assertTrue(flywheel.goal().isEmpty());
         assertFalse(flywheel.atGoal());
+    }
+
+    @Test
+    void openLoopVoltageSpinsWithoutReachingGoalAndAGoalCancelsIt() {
+        flywheel.runVoltage(6.0);
+        loops(100);
+        assertTrue(
+                flywheel.velocity().in(RPM) > 1000, "rpm " + flywheel.velocity().in(RPM));
+        assertTrue(flywheel.goal().isEmpty());
+        assertFalse(flywheel.atGoal());
+        assertTrue(flywheel.statorAmps() >= 0.0);
+
+        flywheel.setGoal(RPM.of(1500));
+        loops(100);
+        assertTrue(flywheel.atGoal());
+        assertEquals(1500, flywheel.velocity().in(RPM), 50);
     }
 
     @Test

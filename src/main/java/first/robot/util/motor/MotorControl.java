@@ -22,6 +22,7 @@ public abstract class MotorControl implements LoopParticipant, AutoCloseable {
     private final Alert followerDisconnectedAlert;
     private Debouncer atGoalDebouncer = newAtGoalDebouncer();
     private OptionalDouble goal = OptionalDouble.empty();
+    private OptionalDouble openLoopVolts = OptionalDouble.empty();
     private boolean connected = true;
     private boolean atGoal = false;
 
@@ -46,7 +47,22 @@ public abstract class MotorControl implements LoopParticipant, AutoCloseable {
 
     public final void stop() {
         goal = OptionalDouble.empty();
+        openLoopVolts = OptionalDouble.empty();
         atGoal = false;
+    }
+
+    public final void runVoltage(double volts) {
+        goal = OptionalDouble.empty();
+        atGoal = false;
+        openLoopVolts = OptionalDouble.of(volts);
+    }
+
+    public final double statorAmps() {
+        return inputs.statorAmps;
+    }
+
+    public final double supplyAmps() {
+        return inputs.supplyAmps;
     }
 
     protected final OptionalDouble goalValue() {
@@ -59,6 +75,7 @@ public abstract class MotorControl implements LoopParticipant, AutoCloseable {
             atGoalDebouncer = newAtGoalDebouncer();
         }
         goal = OptionalDouble.of(value);
+        openLoopVolts = OptionalDouble.empty();
     }
 
     @Override
@@ -73,8 +90,12 @@ public abstract class MotorControl implements LoopParticipant, AutoCloseable {
 
     @Override
     public final void applyOutputs() {
-        if (RobotState.isDisabled() || goal.isEmpty()) {
+        if (RobotState.isDisabled() || (goal.isEmpty() && openLoopVolts.isEmpty())) {
             outputs.setNeutral();
+        } else if (openLoopVolts.isPresent()) {
+            outputs.mode = MotorIO.Mode.VOLTAGE;
+            outputs.value = openLoopVolts.getAsDouble();
+            outputs.feedforwardVolts = 0.0;
         } else {
             fillOutputs(goal.getAsDouble(), outputs);
         }

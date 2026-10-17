@@ -27,6 +27,7 @@ class PositionControlTest {
                 new MotorConfig.Gains(0.0, 0.0, 0.0, 0.5, 40.0, 2.0, MotorConfig.GravityType.ARM),
                 new MotorConfig.CurrentLimits(40, 80),
                 Optional.of(new MotorConfig.SoftLimits(-0.5, 1.8)),
+                MotorConfig.Shaping.NONE,
                 new MotorConfig.SimModel.Arm(DCMotor.getKrakenX60(1), 0.5, 0.5, -0.5, 1.8));
     }
 
@@ -41,6 +42,7 @@ class PositionControlTest {
                 new MotorConfig.Gains(0.0, 0.0, 0.0, 0.17, 10.0, 0.5, MotorConfig.GravityType.ELEVATOR),
                 new MotorConfig.CurrentLimits(40, 80),
                 Optional.empty(),
+                MotorConfig.Shaping.NONE,
                 new MotorConfig.SimModel.Elevator(DCMotor.getKrakenX60(1), 5.0, 0.02, 0.0, 1.0));
     }
 
@@ -67,6 +69,37 @@ class PositionControlTest {
             loops(arm, 150);
             assertTrue(arm.atGoal());
             assertEquals(30, arm.position().in(Degrees), 2);
+        }
+    }
+
+    @Test
+    void motionMagicCapsSimulatedVelocity() {
+        var base = armConfig();
+        var profiled = new MotorConfig(
+                base.name(),
+                base.leader(),
+                base.followers(),
+                base.inverted(),
+                base.brakeMode(),
+                base.sensorToMechanismRatio(),
+                base.gains(),
+                base.currentLimits(),
+                base.softLimits(),
+                MotorConfig.Shaping.motionMagic(1.0, 4.0),
+                base.simModel());
+        try (var arm = new PositionControl(profiled, new MotorIOSim(profiled), Degrees.of(2))) {
+            arm.setGoal(Degrees.of(60));
+            loops(arm, 1);
+            double fastest = 0.0;
+            double last = arm.position().in(Radians);
+            for (int i = 0; i < 150; i++) {
+                loops(arm, 1);
+                double now = arm.position().in(Radians);
+                fastest = Math.max(fastest, Math.abs(now - last) / SimTestUtil.LOOP_SECONDS);
+                last = now;
+            }
+            assertTrue(fastest < 1.3, "peak velocity " + fastest);
+            assertEquals(60, arm.position().in(Degrees), 3);
         }
     }
 
