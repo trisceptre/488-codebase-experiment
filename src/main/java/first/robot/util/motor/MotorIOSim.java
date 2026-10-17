@@ -3,12 +3,14 @@ package first.robot.util.motor;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import first.robot.util.motor.MotorConfig.SimModel;
 import java.util.Arrays;
+import java.util.Optional;
 
 public class MotorIOSim implements MotorIO {
     public static final double LOOP_PERIOD_SECONDS = 0.02;
@@ -18,6 +20,8 @@ public class MotorIOSim implements MotorIO {
     private final MotorConfig config;
     private final Plant plant;
     private final PIDController feedback;
+    private final Optional<TrapezoidProfile> profile;
+    private TrapezoidProfile.State profileSetpoint;
     private Mode lastMode = Mode.NEUTRAL;
     private double appliedVolts = 0.0;
     private boolean connected = true;
@@ -27,6 +31,10 @@ public class MotorIOSim implements MotorIO {
         this.plant = Plant.create(config);
         this.feedback =
                 new PIDController(config.gains().kP(), 0.0, config.gains().kD(), LOOP_PERIOD_SECONDS);
+        this.profile = config.shaping()
+                .motionMagic()
+                .map(mm -> new TrapezoidProfile(
+                        new TrapezoidProfile.Constraints(mm.cruiseRadPerSec(), mm.accelRadPerSecSq())));
     }
 
     public void setDisconnected(boolean disconnected) {
@@ -57,6 +65,7 @@ public class MotorIOSim implements MotorIO {
     public void applyOutputs(Outputs outputs) {
         if (outputs.mode != lastMode) {
             feedback.reset();
+            profileSetpoint = new TrapezoidProfile.State(plant.positionRad(), plant.velocityRadPerSec());
             lastMode = outputs.mode;
         }
         double volts = switch (outputs.mode) {
@@ -66,9 +75,19 @@ public class MotorIOSim implements MotorIO {
                 feedback.calculate(rotations(plant.velocityRadPerSec()), rotations(outputs.value))
                         + outputs.feedforwardVolts;
             case POSITION ->
-                feedback.calculate(rotations(plant.positionRad()), rotations(outputs.value)) + outputs.feedforwardVolts;
+                feedback.calculate(rotations(plant.positionRad()), rotations(profiledPosition(outputs.value)))
+                        + outputs.feedforwardVolts;
         };
         appliedVolts = MathUtil.clamp(volts, -MAX_VOLTS, MAX_VOLTS);
+    }
+
+    private double profiledPosition(double goalRad) {
+        if (profile.isEmpty()) {
+            return goalRad;
+        }
+        profileSetpoint =
+                profile.get().calculate(LOOP_PERIOD_SECONDS, profileSetpoint, new TrapezoidProfile.State(goalRad, 0.0));
+        return profileSetpoint.position;
     }
 
     private static double rotations(double radians) {

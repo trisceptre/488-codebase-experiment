@@ -21,6 +21,7 @@ class MotorConfigTest {
                 new MotorConfig.Gains(0.0, 0.12, 0.0, 0.0, 0.3, 0.0, MotorConfig.GravityType.NONE),
                 new MotorConfig.CurrentLimits(60, 120),
                 Optional.empty(),
+                MotorConfig.Shaping.NONE,
                 new MotorConfig.SimModel.Flywheel(DCMotor.getKrakenX60(1 + followers.size()), 0.004));
     }
 

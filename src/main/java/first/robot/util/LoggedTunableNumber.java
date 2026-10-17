@@ -35,6 +35,10 @@ public final class LoggedTunableNumber implements DoubleSupplier {
         return networkNumber.get();
     }
 
+    public void set(double value) {
+        networkNumber.set(value);
+    }
+
     @Override
     public double getAsDouble() {
         return get();

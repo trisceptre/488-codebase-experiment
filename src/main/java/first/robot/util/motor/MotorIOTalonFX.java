@@ -6,6 +6,7 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
@@ -44,11 +45,14 @@ public class MotorIOTalonFX implements MotorIO, AutoCloseable {
     private final VoltageOut voltageRequest = new VoltageOut(0.0);
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0).withSlot(0);
     private final PositionVoltage positionRequest = new PositionVoltage(0.0).withSlot(0);
+    private final MotionMagicVoltage motionMagicRequest = new MotionMagicVoltage(0.0).withSlot(0);
+    private final boolean useMotionMagic;
 
     private final Alert configFailedAlert;
 
     public MotorIOTalonFX(MotorConfig config) {
         TalonFXConfiguration talonConfig = toTalonConfig(config);
+        useMotionMagic = config.shaping().motionMagic().isPresent();
         List<String> configFailures = new ArrayList<>();
 
         CANBus leaderBus = canBus(config.leader());
@@ -130,9 +134,14 @@ public class MotorIOTalonFX implements MotorIO, AutoCloseable {
                         .withVelocity(Units.radiansToRotations(outputs.value))
                         .withFeedForward(outputs.feedforwardVolts));
             case POSITION ->
-                leader.setControl(positionRequest
-                        .withPosition(Units.radiansToRotations(outputs.value))
-                        .withFeedForward(outputs.feedforwardVolts));
+                leader.setControl(
+                        useMotionMagic
+                                ? motionMagicRequest
+                                        .withPosition(Units.radiansToRotations(outputs.value))
+                                        .withFeedForward(outputs.feedforwardVolts)
+                                : positionRequest
+                                        .withPosition(Units.radiansToRotations(outputs.value))
+                                        .withFeedForward(outputs.feedforwardVolts));
         }
     }
 
@@ -148,6 +157,17 @@ public class MotorIOTalonFX implements MotorIO, AutoCloseable {
         talonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
         talonConfig.CurrentLimits.StatorCurrentLimit = config.currentLimits().statorAmps();
         talonConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        talonConfig.CurrentLimits.SupplyCurrentLowerLimit =
+                config.currentLimits().supplyLowerAmps();
+        talonConfig.CurrentLimits.SupplyCurrentLowerTime =
+                config.currentLimits().supplyLowerSeconds();
+        double ramp = config.shaping().rampSeconds();
+        talonConfig.OpenLoopRamps.VoltageOpenLoopRampPeriod = ramp;
+        talonConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = ramp;
+        config.shaping().motionMagic().ifPresent(profile -> {
+            talonConfig.MotionMagic.MotionMagicCruiseVelocity = Units.radiansToRotations(profile.cruiseRadPerSec());
+            talonConfig.MotionMagic.MotionMagicAcceleration = Units.radiansToRotations(profile.accelRadPerSecSq());
+        });
         config.softLimits().ifPresent(limits -> {
             talonConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = Units.radiansToRotations(limits.minRad());
             talonConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Units.radiansToRotations(limits.maxRad());
