@@ -68,10 +68,16 @@ public final class RobotConfigs {
             CAMERAS_2026,
             AprilTagFields.k2026RebuiltWelded,
             Optional.of(new RobotConfig.Candle(57, "*", 68)),
-            PDH_CAN_ID);
+            PDH_CAN_ID,
+            Optional.of(Hardware2026.SUPERSTRUCTURE));
 
-    public static final RobotConfig CHASSIS_2025 =
-            new RobotConfig(DRIVE_2025, CAMERAS_2025, AprilTagFields.k2026RebuiltWelded, Optional.empty(), PDH_CAN_ID);
+    public static final RobotConfig CHASSIS_2025 = new RobotConfig(
+            DRIVE_2025,
+            CAMERAS_2025,
+            AprilTagFields.k2026RebuiltWelded,
+            Optional.empty(),
+            PDH_CAN_ID,
+            Optional.empty());
 
     public static final RobotConfig SIM = COMP_2026;
 
