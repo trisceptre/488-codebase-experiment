@@ -1,14 +1,14 @@
 package first.robot.util.motor;
 
-import static org.wpilib.units.Units.Meters;
-import static org.wpilib.units.Units.Radians;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Radians;
 
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Distance;
 import first.robot.util.LoggedTunableNumber;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.units.measure.Angle;
-import org.wpilib.units.measure.Distance;
 
 public class PositionControl extends MotorControl {
     private final LoggedTunableNumber toleranceRad;
@@ -16,20 +16,14 @@ public class PositionControl extends MotorControl {
     private final double drumRadiusMeters;
 
     public PositionControl(MotorConfig config, MotorIO io, Angle tolerance) {
-        if (drumRadius(config).isPresent()) {
-            throw new IllegalStateException(config.name() + " is linear; construct it with a Distance tolerance");
-        }
-        super(config, io);
+        super(requireRotary(config), io);
         linear = false;
         drumRadiusMeters = 0.0;
         toleranceRad = new LoggedTunableNumber(name() + "/ToleranceRad", tolerance.in(Radians));
     }
 
     public PositionControl(MotorConfig config, MotorIO io, Distance tolerance) {
-        if (drumRadius(config).isEmpty()) {
-            throw new IllegalStateException(config.name() + " is rotary; construct it with an Angle tolerance");
-        }
-        super(config, io);
+        super(requireLinear(config), io);
         linear = true;
         drumRadiusMeters = drumRadius(config).getAsDouble();
         toleranceRad = new LoggedTunableNumber(name() + "/ToleranceRad", tolerance.in(Meters) / drumRadiusMeters);
@@ -90,6 +84,20 @@ public class PositionControl extends MotorControl {
         double clamped = config.softLimits().map(limits -> limits.clamp(rad)).orElse(rad);
         Logger.recordOutput(name() + "/GoalClamped", clamped != rad);
         setGoalValue(clamped);
+    }
+
+    private static MotorConfig requireRotary(MotorConfig config) {
+        if (drumRadius(config).isPresent()) {
+            throw new IllegalStateException(config.name() + " is linear; construct it with a Distance tolerance");
+        }
+        return config;
+    }
+
+    private static MotorConfig requireLinear(MotorConfig config) {
+        if (drumRadius(config).isEmpty()) {
+            throw new IllegalStateException(config.name() + " is rotary; construct it with an Angle tolerance");
+        }
+        return config;
     }
 
     private static OptionalDouble drumRadius(MotorConfig config) {

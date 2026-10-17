@@ -2,6 +2,14 @@ package first.robot.vision;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.wpilibj.Timer;
 import first.robot.RobotState;
 import first.robot.constants.RobotConfigs;
 import first.robot.testing.SimTestUtil;
@@ -11,14 +19,6 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.wpilib.fields.Field;
-import org.wpilib.fields.Fields;
-import org.wpilib.math.geometry.Pose3d;
-import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.math.geometry.Rotation3d;
-import org.wpilib.math.geometry.Transform3d;
-import org.wpilib.math.kinematics.SwerveModulePosition;
-import org.wpilib.system.Timer;
 
 class VisionTest {
     private static final class FakeCamera implements VisionIO {
@@ -39,12 +39,15 @@ class VisionTest {
     @BeforeEach
     void setUp() {
         SimTestUtil.setUp();
-        var config = RobotConfigs.COMP.drive();
+        var config = RobotConfigs.COMP_2026.drive();
         robotState = new RobotState(config.kinematics(), config.moduleCount());
         camera = new FakeCamera();
         var info = new CameraInfo("Test", "TestCam", new Transform3d(), 1.0);
-        vision =
-                new Vision(List.of(info), List.of(camera), Field.loadField(Fields.FRC_2026_REBUILT_WELDED), robotState);
+        vision = new Vision(
+                List.of(info),
+                List.of(camera),
+                AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded),
+                robotState);
     }
 
     @AfterEach
@@ -59,7 +62,7 @@ class VisionTest {
         double now = Timer.getTimestamp();
         var still = new SwerveModulePosition[4];
         Arrays.fill(still, new SwerveModulePosition());
-        robotState.addOdometryObservation(new RobotState.OdometryObservation(now, still, Rotation2d.ZERO));
+        robotState.addOdometryObservation(new RobotState.OdometryObservation(now, still, Rotation2d.kZero));
         camera.next = new PoseObservation[] {
             new PoseObservation(now, new Pose3d(4.0, 3.0, 0.0, new Rotation3d()), 0.0, 2, 1.0)
         };

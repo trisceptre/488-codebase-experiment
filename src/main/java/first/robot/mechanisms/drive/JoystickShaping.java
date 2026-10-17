@@ -1,8 +1,8 @@
 package first.robot.mechanisms.drive;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Rotation2d;
 import java.util.Optional;
-import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.math.util.MathUtil;
 
 public final class JoystickShaping {
     private JoystickShaping() {}

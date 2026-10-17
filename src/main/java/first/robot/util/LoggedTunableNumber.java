@@ -1,11 +1,11 @@
 package first.robot.util;
 
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.Preferences;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-import org.wpilib.networktables.NetworkTableInstance;
-import org.wpilib.preferences.Preferences;
 
 public final class LoggedTunableNumber implements DoubleSupplier {
     public enum Level {

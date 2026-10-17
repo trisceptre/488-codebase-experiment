@@ -1,9 +1,10 @@
 package first.robot.util.motor;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.system.plant.DCMotor;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.wpilib.math.system.DCMotor;
 
 public record MotorConfig(
         String name,
@@ -54,7 +55,7 @@ public record MotorConfig(
         }
 
         public double clamp(double rad) {
-            return Math.clamp(rad, minRad, maxRad);
+            return MathUtil.clamp(rad, minRad, maxRad);
         }
     }
 

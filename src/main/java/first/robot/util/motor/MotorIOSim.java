@@ -1,13 +1,14 @@
 package first.robot.util.motor;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.simulation.ElevatorSim;
+import edu.wpi.first.wpilibj.simulation.FlywheelSim;
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import first.robot.util.motor.MotorConfig.SimModel;
 import java.util.Arrays;
-import org.wpilib.math.controller.PIDController;
-import org.wpilib.math.system.Models;
-import org.wpilib.math.util.Units;
-import org.wpilib.simulation.ElevatorSim;
-import org.wpilib.simulation.FlywheelSim;
-import org.wpilib.simulation.SingleJointedArmSim;
 
 public class MotorIOSim implements MotorIO {
     public static final double LOOP_PERIOD_SECONDS = 0.02;
@@ -67,7 +68,7 @@ public class MotorIOSim implements MotorIO {
             case POSITION ->
                 feedback.calculate(rotations(plant.positionRad()), rotations(outputs.value)) + outputs.feedforwardVolts;
         };
-        appliedVolts = Math.clamp(volts, -MAX_VOLTS, MAX_VOLTS);
+        appliedVolts = MathUtil.clamp(volts, -MAX_VOLTS, MAX_VOLTS);
     }
 
     private static double rotations(double radians) {
@@ -85,33 +86,27 @@ public class MotorIOSim implements MotorIO {
 
         static Plant create(MotorConfig config) {
             double gearing = config.sensorToMechanismRatio();
-            return switch (config.simModel()) {
-                case SimModel.Flywheel f ->
-                    new FlywheelPlant(new FlywheelSim(
-                            Models.flywheelFromPhysicalConstants(f.motor(), f.moiKgM2(), gearing), f.motor()));
-                case SimModel.Arm a ->
-                    new ArmPlant(new SingleJointedArmSim(
-                            a.motor(),
+            SimModel model = config.simModel();
+            if (model instanceof SimModel.Flywheel f) {
+                return new FlywheelPlant(new FlywheelSim(
+                        LinearSystemId.createFlywheelSystem(f.motor(), f.moiKgM2(), gearing), f.motor()));
+            }
+            if (model instanceof SimModel.Arm a) {
+                return new ArmPlant(new SingleJointedArmSim(
+                        a.motor(), gearing, a.moiKgM2(), a.lengthMeters(), a.minRad(), a.maxRad(), true, a.minRad()));
+            }
+            SimModel.Elevator e = (SimModel.Elevator) model;
+            return new ElevatorPlant(
+                    new ElevatorSim(
+                            e.motor(),
                             gearing,
-                            a.moiKgM2(),
-                            a.lengthMeters(),
-                            a.minRad(),
-                            a.maxRad(),
+                            e.carriageMassKg(),
+                            e.drumRadiusMeters(),
+                            e.minMeters(),
+                            e.maxMeters(),
                             true,
-                            a.minRad()));
-                case SimModel.Elevator e ->
-                    new ElevatorPlant(
-                            new ElevatorSim(
-                                    e.motor(),
-                                    gearing,
-                                    e.carriageMassKg(),
-                                    e.drumRadiusMeters(),
-                                    e.minMeters(),
-                                    e.maxMeters(),
-                                    true,
-                                    e.minMeters()),
-                            e.drumRadiusMeters());
-            };
+                            e.minMeters()),
+                    e.drumRadiusMeters());
         }
     }
 
@@ -127,7 +122,7 @@ public class MotorIOSim implements MotorIO {
         public void step(double volts, double dtSeconds) {
             sim.setInputVoltage(volts);
             sim.update(dtSeconds);
-            positionRad += sim.getAngularVelocity() * dtSeconds;
+            positionRad += sim.getAngularVelocityRadPerSec() * dtSeconds;
         }
 
         @Override
@@ -137,12 +132,12 @@ public class MotorIOSim implements MotorIO {
 
         @Override
         public double velocityRadPerSec() {
-            return sim.getAngularVelocity();
+            return sim.getAngularVelocityRadPerSec();
         }
 
         @Override
         public double currentAmps() {
-            return sim.getCurrentDraw();
+            return sim.getCurrentDrawAmps();
         }
     }
 
@@ -161,17 +156,17 @@ public class MotorIOSim implements MotorIO {
 
         @Override
         public double positionRad() {
-            return sim.getAngle();
+            return sim.getAngleRads();
         }
 
         @Override
         public double velocityRadPerSec() {
-            return sim.getVelocity();
+            return sim.getVelocityRadPerSec();
         }
 
         @Override
         public double currentAmps() {
-            return sim.getCurrentDraw();
+            return sim.getCurrentDrawAmps();
         }
     }
 
@@ -192,17 +187,17 @@ public class MotorIOSim implements MotorIO {
 
         @Override
         public double positionRad() {
-            return sim.getPosition() / drumRadiusMeters;
+            return sim.getPositionMeters() / drumRadiusMeters;
         }
 
         @Override
         public double velocityRadPerSec() {
-            return sim.getVelocity() / drumRadiusMeters;
+            return sim.getVelocityMetersPerSecond() / drumRadiusMeters;
         }
 
         @Override
         public double currentAmps() {
-            return sim.getCurrentDraw();
+            return sim.getCurrentDrawAmps();
         }
     }
 }

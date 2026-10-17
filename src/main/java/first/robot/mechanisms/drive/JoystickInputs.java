@@ -1,7 +1,7 @@
 package first.robot.mechanisms.drive;
 
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import java.util.function.DoubleSupplier;
-import org.wpilib.command3.button.CommandGamepad;
 
 public record JoystickInputs(
         DoubleSupplier leftX,
@@ -11,12 +11,12 @@ public record JoystickInputs(
         DoubleSupplier rightX,
         DoubleSupplier rightY) {
 
-    public static JoystickInputs from(CommandGamepad gamepad) {
+    public static JoystickInputs from(CommandXboxController gamepad) {
         return new JoystickInputs(
                 gamepad::getLeftX,
                 gamepad::getLeftY,
-                gamepad::getLeftTrigger,
-                gamepad::getRightTrigger,
+                gamepad::getLeftTriggerAxis,
+                gamepad::getRightTriggerAxis,
                 gamepad::getRightX,
                 gamepad::getRightY);
     }

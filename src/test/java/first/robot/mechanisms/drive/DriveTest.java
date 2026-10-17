@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.wpi.first.hal.AllianceStationID;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import first.robot.LoopParticipant;
 import first.robot.RobotState;
 import first.robot.constants.RobotConfigs;
@@ -12,13 +16,9 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.wpilib.command3.Scheduler;
-import org.wpilib.hardware.hal.AllianceStationID;
-import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.simulation.DriverStationSim;
 
 class DriveTest {
-    private final Scheduler scheduler = Scheduler.getDefault();
+    private final CommandScheduler scheduler = CommandScheduler.getInstance();
     private final double[] axes = new double[6];
     private final JoystickInputs sticks = new JoystickInputs(
             () -> axes[0], () -> axes[1], () -> axes[2], () -> axes[3], () -> axes[4], () -> axes[5]);
@@ -30,9 +30,9 @@ class DriveTest {
     @BeforeEach
     void setUp() {
         SimTestUtil.setUp();
-        scheduler.cancelAll();
-        setAlliance(AllianceStationID.BLUE_1);
-        var config = RobotConfigs.COMP.drive();
+        SimTestUtil.resetScheduler(scheduler);
+        setAlliance(AllianceStationID.Blue1);
+        var config = RobotConfigs.COMP_2026.drive();
         io = new FakeDriveIO(config);
         robotState = new RobotState(config.kinematics(), config.moduleCount());
         drive = new Drive(config, io, robotState);
@@ -41,7 +41,7 @@ class DriveTest {
 
     @AfterEach
     void tearDown() {
-        scheduler.cancelAll();
+        SimTestUtil.resetScheduler(scheduler);
         drive.close();
         robotState.close();
         SimTestUtil.tearDown();
@@ -70,7 +70,7 @@ class DriveTest {
 
     @Test
     void forwardStickDrivesTowardBlueWallOnRed() {
-        setAlliance(AllianceStationID.RED_1);
+        setAlliance(AllianceStationID.Red1);
         SimTestUtil.schedule(scheduler, drive.joystickDrive(sticks, () -> false));
         axes[1] = -1.0;
         loops(25);
@@ -125,6 +125,6 @@ class DriveTest {
     void wheelRadiusCharacterizationRecoversConfiguredRadius() {
         SimTestUtil.schedule(scheduler, drive.wheelRadiusCharacterization());
         loops(150);
-        assertEquals(RobotConfigs.COMP.drive().wheelRadiusMeters(), drive.getWheelRadiusEstimateMeters(), 1e-3);
+        assertEquals(RobotConfigs.COMP_2026.drive().wheelRadiusMeters(), drive.getWheelRadiusEstimateMeters(), 1e-3);
     }
 }

@@ -1,13 +1,13 @@
 package first.robot.util.power;
 
-import org.wpilib.hardware.bus.CANPort;
-import org.wpilib.hardware.power.PowerDistribution;
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 
 public class PowerIOPDH implements PowerIO {
     private final PowerDistribution pdh;
 
-    public PowerIOPDH(CANPort port) {
-        pdh = new PowerDistribution(port);
+    public PowerIOPDH(int canId) {
+        pdh = new PowerDistribution(canId, ModuleType.kRev);
     }
 
     @Override

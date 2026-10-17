@@ -1,7 +1,7 @@
 package first.robot.mechanisms.drive;
 
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import org.littletonrobotics.junction.AutoLog;
-import org.wpilib.math.kinematics.ChassisVelocities;
 
 public interface DriveIO {
     @AutoLog
@@ -21,7 +21,7 @@ public interface DriveIO {
 
     default void updateInputs(DriveIOInputs inputs) {}
 
-    default void setRobotVelocity(ChassisVelocities velocity) {}
+    default void setRobotVelocity(ChassisSpeeds velocity) {}
 
     default void stopWithX() {}
 

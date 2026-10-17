@@ -7,9 +7,9 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.ArrayDeque;
-import org.wpilib.math.kinematics.ChassisVelocities;
-import org.wpilib.system.Timer;
 
 public class DriveIOCTRE implements DriveIO, AutoCloseable {
     private static final int QUEUE_CAPACITY = 64;
@@ -21,7 +21,7 @@ public class DriveIOCTRE implements DriveIO, AutoCloseable {
     private final ArrayDeque<Sample> queue = new ArrayDeque<>(QUEUE_CAPACITY);
     private long dropped = 0;
 
-    private final SwerveRequest.ApplyRobotVelocity velocityRequest = new SwerveRequest.ApplyRobotVelocity();
+    private final SwerveRequest.ApplyRobotSpeeds velocityRequest = new SwerveRequest.ApplyRobotSpeeds();
     private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
     private final SwerveRequest.Idle idleRequest = new SwerveRequest.Idle();
 
@@ -40,7 +40,7 @@ public class DriveIOCTRE implements DriveIO, AutoCloseable {
         var distances = new double[moduleCount];
         var angles = new double[moduleCount];
         for (int j = 0; j < moduleCount; j++) {
-            distances[j] = state.ModulePositions[j].distance;
+            distances[j] = state.ModulePositions[j].distanceMeters;
             angles[j] = state.ModulePositions[j].angle.getRadians();
         }
         var sample = new Sample(state.Timestamp, state.RawHeading.getRadians(), distances, angles);
@@ -82,9 +82,9 @@ public class DriveIOCTRE implements DriveIO, AutoCloseable {
         inputs.steerConnected = new boolean[moduleCount];
         inputs.encoderConnected = new boolean[moduleCount];
         for (int j = 0; j < moduleCount; j++) {
-            if (state.ModuleVelocities != null) {
-                inputs.moduleSpeedsMetersPerSec[j] = state.ModuleVelocities[j].velocity;
-                inputs.moduleAnglesRad[j] = state.ModuleVelocities[j].angle.getRadians();
+            if (state.ModuleStates != null) {
+                inputs.moduleSpeedsMetersPerSec[j] = state.ModuleStates[j].speedMetersPerSecond;
+                inputs.moduleAnglesRad[j] = state.ModuleStates[j].angle.getRadians();
             }
             var module = drivetrain.getModule(j);
             inputs.driveConnected[j] = module.getDriveMotor().isConnected();
@@ -95,8 +95,8 @@ public class DriveIOCTRE implements DriveIO, AutoCloseable {
     }
 
     @Override
-    public void setRobotVelocity(ChassisVelocities velocity) {
-        velocityRequest.Velocity = velocity;
+    public void setRobotVelocity(ChassisSpeeds velocity) {
+        velocityRequest.Speeds = velocity;
         drivetrain.setControl(velocityRequest);
     }
 

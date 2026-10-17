@@ -26,7 +26,7 @@ public final class PhoenixUtil {
     }
 
     public static synchronized void registerSignals(CANBus bus, BaseStatusSignal... signals) {
-        SIGNALS_BY_BUS.computeIfAbsent(bus, _ -> new ArrayList<>()).addAll(List.of(signals));
+        SIGNALS_BY_BUS.computeIfAbsent(bus, key -> new ArrayList<>()).addAll(List.of(signals));
     }
 
     public static synchronized void refreshAll() {

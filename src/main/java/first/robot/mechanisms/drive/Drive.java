@@ -1,27 +1,34 @@
 package first.robot.mechanisms.drive;
 
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 import first.robot.LoopParticipant;
 import first.robot.RobotState;
 import first.robot.util.LoggedTunableNumber;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.command3.Command;
-import org.wpilib.command3.Mechanism;
-import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchState;
-import org.wpilib.math.filter.Debouncer;
-import org.wpilib.math.filter.SlewRateLimiter;
-import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.math.kinematics.ChassisVelocities;
-import org.wpilib.math.kinematics.SwerveModulePosition;
-import org.wpilib.system.Timer;
-import org.wpilib.util.Alert;
 
-public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
+public final class Drive implements Subsystem, LoopParticipant, AutoCloseable {
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25;
     private static final double WHEEL_RADIUS_RAMP_RATE = 0.05;
     private static final double WHEEL_RADIUS_SETTLE_SECONDS = 1.0;
+
+    private static final class WheelRadiusState {
+        double startTime;
+        double[] startDistances;
+        Rotation2d lastYaw;
+        double gyroDelta;
+    }
 
     private enum Request {
         IDLE,
@@ -36,10 +43,8 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
     private final HeadingModule heading;
     private final Debouncer[] moduleDebouncers;
     private final Alert[] moduleAlerts;
-    private final Alert gyroAlert =
-            new Alert("Drive/GyroDisconnected", "Pigeon disconnected: heading control off", Alert.Level.HIGH);
-    private final Alert droppedAlert =
-            new Alert("Drive/OdometryDropped", "Odometry samples dropped (loop stalled)", Alert.Level.MEDIUM);
+    private final Alert gyroAlert = new Alert("Pigeon disconnected: heading control off", Alert.AlertType.kError);
+    private final Alert droppedAlert = new Alert("Odometry samples dropped (loop stalled)", Alert.AlertType.kWarning);
 
     private final LoggedTunableNumber translationDeadband =
             new LoggedTunableNumber("Drive/Joystick/TranslationDeadband", 0.15);
@@ -56,11 +61,11 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
     private final LoggedTunableNumber headingToleranceDeg = new LoggedTunableNumber("Drive/Heading/ToleranceDeg", 2.0);
 
     private Request request = Request.IDLE;
-    private ChassisVelocities fieldVelocity = new ChassisVelocities();
+    private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
     private boolean modulesHealthy = true;
     private long lastDropped = 0;
     private double[] lastModuleDistancesMeters;
-    private Rotation2d lastGyroYaw = Rotation2d.ZERO;
+    private Rotation2d lastGyroYaw = Rotation2d.kZero;
     private double wheelRadiusEstimateMeters = 0.0;
 
     public Drive(SwerveConfig config, DriveIO io, RobotState robotState) {
@@ -74,10 +79,10 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
         moduleAlerts = new Alert[n];
         for (int j = 0; j < n; j++) {
             String label = config.moduleLabels().get(j);
-            moduleDebouncers[j] = new Debouncer(0.5, Debouncer.DebounceType.FALLING);
-            moduleAlerts[j] = new Alert(
-                    "Drive/" + label + "/Disconnected", label + " module device disconnected", Alert.Level.HIGH);
+            moduleDebouncers[j] = new Debouncer(0.5, Debouncer.DebounceType.kFalling);
+            moduleAlerts[j] = new Alert(label + " module device disconnected", Alert.AlertType.kError);
         }
+        register();
         setDefaultCommand(idle());
     }
 
@@ -86,18 +91,12 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
         return "Drive";
     }
 
-    @Override
     public Command idle() {
-        return run(coroutine -> {
-                    stop();
-                    coroutine.park();
-                })
-                .withPriority(Command.LOWEST_PRIORITY)
-                .named("Drive.Idle");
+        return run(this::stop).withName("Drive.Idle");
     }
 
     public Command joystickDrive(JoystickInputs sticks, BooleanSupplier precision) {
-        return runRepeatedly(() -> {
+        return run(() -> {
                     var intent = shape(sticks, precision.getAsBoolean());
                     double omega;
                     if (intent.heading().isPresent() && canControlHeading()) {
@@ -109,11 +108,11 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
                     }
                     driveFraction(intent, omega);
                 })
-                .named("Drive.JoystickDrive");
+                .withName("Drive.JoystickDrive");
     }
 
     public Command joystickDriveAtAngle(JoystickInputs sticks, Supplier<Rotation2d> angle) {
-        return runRepeatedly(() -> {
+        return run(() -> {
                     var intent = shape(sticks, false);
                     double omega;
                     if (canControlHeading()) {
@@ -124,48 +123,45 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
                     }
                     driveFraction(intent, omega);
                 })
-                .named("Drive.JoystickDriveAtAngle");
+                .withName("Drive.JoystickDriveAtAngle");
     }
 
     public Command stopWithX() {
-        return run(coroutine -> {
-                    // Turns the wheels into an X shape so it is harder to shove our robot
-                    request = Request.X;
-                    coroutine.park();
-                })
-                .named("Drive.StopWithX");
+        // Turns the wheels into an X shape so it is harder to shove our robot
+        return run(() -> request = Request.X).withName("Drive.StopWithX");
     }
 
     public Command wheelRadiusCharacterization() {
-        return run(coroutine -> {
-                    var limiter = new SlewRateLimiter(WHEEL_RADIUS_RAMP_RATE);
+        var limiter = new SlewRateLimiter(WHEEL_RADIUS_RAMP_RATE);
+        var state = new WheelRadiusState();
+        return runOnce(() -> {
                     limiter.reset(0.0);
-                    double startTime = Timer.getTimestamp();
-                    double[] startDistances = null;
-                    Rotation2d lastYaw = lastGyroYaw;
-                    double gyroDelta = 0.0;
-                    while (true) {
-                        runFieldVelocity(new ChassisVelocities(0.0, 0.0, limiter.calculate(WHEEL_RADIUS_MAX_VELOCITY)));
-                        if (Timer.getTimestamp() - startTime >= WHEEL_RADIUS_SETTLE_SECONDS) {
-                            if (startDistances == null) {
-                                startDistances = lastModuleDistancesMeters.clone();
-                            } else {
-                                gyroDelta += Math.abs(lastGyroYaw.minus(lastYaw).getRadians());
-                                updateWheelRadiusEstimate(startDistances, gyroDelta);
-                            }
-                            lastYaw = lastGyroYaw;
-                        }
-                        coroutine.yield();
-                    }
+                    state.startTime = Timer.getTimestamp();
+                    state.startDistances = null;
+                    state.lastYaw = lastGyroYaw;
+                    state.gyroDelta = 0.0;
                 })
-                .named("Drive.WheelRadiusCharacterization");
+                .andThen(run(() -> {
+                    runFieldVelocity(new ChassisSpeeds(0.0, 0.0, limiter.calculate(WHEEL_RADIUS_MAX_VELOCITY)));
+                    if (Timer.getTimestamp() - state.startTime >= WHEEL_RADIUS_SETTLE_SECONDS) {
+                        if (state.startDistances == null) {
+                            state.startDistances = lastModuleDistancesMeters.clone();
+                        } else {
+                            state.gyroDelta +=
+                                    Math.abs(lastGyroYaw.minus(state.lastYaw).getRadians());
+                            updateWheelRadiusEstimate(state.startDistances, state.gyroDelta);
+                        }
+                        state.lastYaw = lastGyroYaw;
+                    }
+                }))
+                .withName("Drive.WheelRadiusCharacterization");
     }
 
     /**
      * Set the target movement speed and rotation, rotating around the center of the
      * robot.
      */
-    public void runFieldVelocity(ChassisVelocities velocity) {
+    public void runFieldVelocity(ChassisSpeeds velocity) {
         request = Request.VELOCITY;
         fieldVelocity = velocity;
     }
@@ -212,7 +208,7 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
                 positions[j] = new SwerveModulePosition(
                         inputs.odometryModuleDistancesMeters[i * m + j],
                         Rotation2d.fromRadians(inputs.odometryModuleAnglesRad[i * m + j]));
-                lastModuleDistancesMeters[j] = positions[j].distance;
+                lastModuleDistancesMeters[j] = positions[j].distanceMeters;
             }
             lastGyroYaw = Rotation2d.fromRadians(inputs.odometryYawRad[i]);
             robotState.addOdometryObservation(
@@ -239,16 +235,18 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
 
     @Override
     public void applyOutputs() {
-        Request effective = org.wpilib.driverstation.RobotState.isDisabled() ? Request.IDLE : request;
+        Request effective = edu.wpi.first.wpilibj.RobotState.isDisabled() ? Request.IDLE : request;
         switch (effective) {
             case IDLE -> io.idle();
             case X -> io.stopWithX();
             // rotate the translation vector into the robot coordinate frame
-            case VELOCITY -> io.setRobotVelocity(fieldVelocity.toRobotRelative(robotState.getRotation()));
+            case VELOCITY ->
+                io.setRobotVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(fieldVelocity, robotState.getRotation()));
         }
         Logger.recordOutput("Drive/Request", effective.name());
-        Logger.recordOutput(
-                "Drive/FieldVelocity", new double[] {fieldVelocity.vx, fieldVelocity.vy, fieldVelocity.omega});
+        Logger.recordOutput("Drive/FieldVelocity", new double[] {
+            fieldVelocity.vxMetersPerSecond, fieldVelocity.vyMetersPerSecond, fieldVelocity.omegaRadiansPerSecond
+        });
         Logger.recordOutput("Drive/AtHeading", atHeading());
     }
 
@@ -282,7 +280,7 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
                 headingStickThreshold.get(),
                 precisionTranslation.get(),
                 precisionRotation.get());
-        boolean red = MatchState.getAlliance().map(a -> a == Alliance.RED).orElse(false);
+        boolean red = DriverStation.getAlliance().map(a -> a == Alliance.Red).orElse(false);
         return JoystickShaping.shape(
                 sticks.leftX().getAsDouble(),
                 sticks.leftY().getAsDouble(),
@@ -296,7 +294,7 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
     }
 
     private void driveFraction(JoystickShaping.Intent intent, double omegaRadPerSec) {
-        runFieldVelocity(new ChassisVelocities(
+        runFieldVelocity(new ChassisSpeeds(
                 intent.vxFraction() * config.maxLinearSpeedMetersPerSec(),
                 intent.vyFraction() * config.maxLinearSpeedMetersPerSec(),
                 omegaRadPerSec));

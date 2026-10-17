@@ -1,6 +1,6 @@
 package first.robot.constants;
 
-import org.wpilib.framework.RobotBase;
+import edu.wpi.first.wpilibj.RobotBase;
 
 public final class Constants {
     public static final Mode currentMode =

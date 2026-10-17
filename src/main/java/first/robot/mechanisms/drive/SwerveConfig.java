@@ -2,9 +2,9 @@ package first.robot.mechanisms.drive;
 
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import java.util.List;
-import org.wpilib.math.geometry.Translation2d;
-import org.wpilib.math.kinematics.SwerveDriveKinematics;
 
 public record SwerveConfig(
         SwerveDrivetrainConstants drivetrain,
@@ -47,7 +47,7 @@ public record SwerveConfig(
     }
 
     public double wheelRadiusMeters() {
-        return modules.getFirst().WheelRadius;
+        return modules.get(0).WheelRadius;
     }
 
     public SwerveDriveKinematics kinematics() {

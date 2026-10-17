@@ -1,6 +1,6 @@
 package first.robot.util.power;
 
-import org.wpilib.system.RobotController;
+import edu.wpi.first.wpilibj.RobotController;
 
 public class PowerIOSim implements PowerIO {
     @Override

@@ -1,11 +1,11 @@
 package first.robot.util.motor;
 
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.RobotState;
 import first.robot.LoopParticipant;
 import java.util.OptionalDouble;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.driverstation.RobotState;
-import org.wpilib.math.filter.Debouncer;
-import org.wpilib.util.Alert;
 
 public abstract class MotorControl implements LoopParticipant, AutoCloseable {
     private static final double AT_GOAL_DEBOUNCE_SECONDS = 0.1;
@@ -17,7 +17,7 @@ public abstract class MotorControl implements LoopParticipant, AutoCloseable {
     private final MotorIO io;
     private final MotorIO.Outputs outputs = new MotorIO.Outputs();
     private final Debouncer connectedDebouncer =
-            new Debouncer(DISCONNECT_DEBOUNCE_SECONDS, Debouncer.DebounceType.FALLING);
+            new Debouncer(DISCONNECT_DEBOUNCE_SECONDS, Debouncer.DebounceType.kFalling);
     private final Alert disconnectedAlert;
     private final Alert followerDisconnectedAlert;
     private Debouncer atGoalDebouncer = newAtGoalDebouncer();
@@ -28,12 +28,8 @@ public abstract class MotorControl implements LoopParticipant, AutoCloseable {
     protected MotorControl(MotorConfig config, MotorIO io) {
         this.config = config;
         this.io = io;
-        disconnectedAlert =
-                new Alert(config.name() + "/Disconnected", config.name() + " motor disconnected", Alert.Level.HIGH);
-        followerDisconnectedAlert = new Alert(
-                config.name() + "/FollowerDisconnected",
-                config.name() + " follower motor disconnected",
-                Alert.Level.MEDIUM);
+        disconnectedAlert = new Alert(config.name() + " motor disconnected", Alert.AlertType.kError);
+        followerDisconnectedAlert = new Alert(config.name() + " follower motor disconnected", Alert.AlertType.kWarning);
     }
 
     public final String name() {
@@ -100,7 +96,7 @@ public abstract class MotorControl implements LoopParticipant, AutoCloseable {
     }
 
     private static Debouncer newAtGoalDebouncer() {
-        return new Debouncer(AT_GOAL_DEBOUNCE_SECONDS, Debouncer.DebounceType.RISING);
+        return new Debouncer(AT_GOAL_DEBOUNCE_SECONDS, Debouncer.DebounceType.kRising);
     }
 
     private static boolean anyFalse(boolean[] values) {

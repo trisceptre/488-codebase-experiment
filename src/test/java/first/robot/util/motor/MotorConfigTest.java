@@ -3,11 +3,11 @@ package first.robot.util.motor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import edu.wpi.first.math.system.plant.DCMotor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.wpilib.math.system.DCMotor;
 
 class MotorConfigTest {
     static MotorConfig flywheel(double ratio, List<MotorConfig.Follower> followers) {

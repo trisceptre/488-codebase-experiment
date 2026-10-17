@@ -1,8 +1,9 @@
 package first.robot.mechanisms.drive;
 
-import org.wpilib.math.controller.PIDController;
-import org.wpilib.math.filter.Debouncer;
-import org.wpilib.math.geometry.Rotation2d;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.geometry.Rotation2d;
 
 /**
  * Encapsulates the logic needed to rotate the robot to a specific angle.
@@ -40,7 +41,7 @@ public final class HeadingModule {
         double errorRad = target.minus(current).getRadians();
         atHeading = atHeadingDebouncer.calculate(Math.abs(errorRad) <= toleranceRad);
         double omega = pid.calculate(current.getRadians(), target.getRadians());
-        return Math.clamp(omega, -maxOmegaRadPerSec, maxOmegaRadPerSec);
+        return MathUtil.clamp(omega, -maxOmegaRadPerSec, maxOmegaRadPerSec);
     }
 
     public boolean atSetpoint() {
@@ -54,6 +55,6 @@ public final class HeadingModule {
     }
 
     private static Debouncer newDebouncer() {
-        return new Debouncer(AT_HEADING_DEBOUNCE_SECONDS, Debouncer.DebounceType.RISING);
+        return new Debouncer(AT_HEADING_DEBOUNCE_SECONDS, Debouncer.DebounceType.kRising);
     }
 }

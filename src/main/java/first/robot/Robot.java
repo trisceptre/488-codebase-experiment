@@ -1,5 +1,11 @@
 package first.robot;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import first.robot.constants.Constants;
 import first.robot.constants.DriverConstants;
 import first.robot.constants.RobotConfig;
@@ -26,7 +32,9 @@ import first.robot.vision.VisionIO;
 import first.robot.vision.VisionIOPhotonVision;
 import first.robot.vision.VisionIOPhotonVisionSim;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -34,15 +42,10 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import org.photonvision.simulation.VisionSystemSim;
-import org.wpilib.command3.Command;
-import org.wpilib.command3.Scheduler;
-import org.wpilib.command3.button.CommandGamepad;
-import org.wpilib.fields.Field;
-import org.wpilib.util.Alert;
 
-// TODO: replace LoggedRobot with LoggedOpModeRobot whenever AdvantageKit updates.
 public class Robot extends LoggedRobot {
-    private final Scheduler scheduler = Scheduler.getDefault();
+    private final CommandScheduler scheduler = CommandScheduler.getInstance();
+    private final Set<Command> runningCommands = new LinkedHashSet<>();
     private final List<LoopParticipant> loopOrder;
     private final DriveIOCTRESim driveSim;
     private final VisionSystemSim visionSim;
@@ -70,6 +73,7 @@ public class Robot extends LoggedRobot {
             case SIM -> {
                 Logger.addDataReceiver(new WPILOGWriter("logs"));
                 Logger.addDataReceiver(new NT4Publisher());
+                DriverStation.silenceJoystickConnectionWarning(true);
             }
             case REPLAY -> {
                 setUseTiming(false);
@@ -83,7 +87,7 @@ public class Robot extends LoggedRobot {
         RobotIdentity identity = RobotIdentity.detect();
         Logger.recordMetadata("RobotIdentity", identity.name());
         RobotConfig config = RobotConfigs.forIdentity(identity);
-        Field field = Field.loadField(config.field());
+        AprilTagFieldLayout field = AprilTagFieldLayout.loadField(config.field());
 
         RobotState robotState =
                 new RobotState(config.drive().kinematics(), config.drive().moduleCount());
@@ -120,12 +124,12 @@ public class Robot extends LoggedRobot {
         }
         Vision vision = new Vision(config.cameras(), cameraIOs, field, robotState);
 
-        Lights lights = new Lights(
-                Constants.currentMode == Constants.Mode.REAL
-                        ? new LightsIOCANdle(config.candleId(), config.candleBus(), config.candleLedCount())
-                        : new LightsIO() {});
+        Lights lights = new Lights(config.lights()
+                .filter(candle -> Constants.currentMode == Constants.Mode.REAL)
+                .<LightsIO>map(candle -> new LightsIOCANdle(candle.canId(), candle.bus(), candle.ledCount()))
+                .orElseGet(() -> new LightsIO() {}));
         PowerIO powerIO = switch (Constants.currentMode) {
-            case REAL -> new PowerIOPDH(config.pdhPort());
+            case REAL -> new PowerIOPDH(config.pdhCanId());
             case SIM -> new PowerIOSim();
             case REPLAY -> new PowerIO() {};
         };
@@ -134,14 +138,18 @@ public class Robot extends LoggedRobot {
         loopOrder = List.of(drive, vision, robotState, lights, voltageMonitor);
 
         boolean offsetsMissing = config.drive().modules().stream().anyMatch(m -> m.EncoderOffset == 0.0);
-        new Alert("Drive/OffsetsMissing", "CANcoder offsets not set in TunerConstants", Alert.Level.HIGH)
+        new Alert("CANcoder offsets not set in TunerConstants", Alert.AlertType.kError)
                 .set(Constants.currentMode == Constants.Mode.REAL && offsetsMissing);
 
         new TeleopBindings(
-                new CommandGamepad(DriverConstants.DRIVER_CONTROLLER_PORT),
-                new CommandGamepad(DriverConstants.DEBUG_CONTROLLER_PORT),
+                new CommandXboxController(DriverConstants.DRIVER_CONTROLLER_PORT),
+                new CommandXboxController(DriverConstants.DEBUG_CONTROLLER_PORT),
                 drive,
                 robotState);
+
+        scheduler.onCommandInitialize(runningCommands::add);
+        scheduler.onCommandFinish(runningCommands::remove);
+        scheduler.onCommandInterrupt(runningCommands::remove);
     }
 
     @Override
@@ -161,7 +169,7 @@ public class Robot extends LoggedRobot {
         LoggedTracer.record("ApplyOutputs");
         Logger.recordOutput(
                 "Scheduler/Running",
-                scheduler.getRunningCommands().stream().map(Command::name).toArray(String[]::new));
+                runningCommands.stream().map(Command::getName).toArray(String[]::new));
     }
 
     @Override

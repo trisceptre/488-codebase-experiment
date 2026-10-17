@@ -1,13 +1,13 @@
 package first.robot.util.motor;
 
-import static org.wpilib.units.Units.RPM;
-import static org.wpilib.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.AngularVelocity;
 import first.robot.util.LoggedTunableNumber;
 import java.util.Optional;
 import java.util.OptionalDouble;
-import org.wpilib.math.util.Units;
-import org.wpilib.units.measure.AngularVelocity;
 
 public class VelocityControl extends MotorControl {
     private final LoggedTunableNumber toleranceRpm;

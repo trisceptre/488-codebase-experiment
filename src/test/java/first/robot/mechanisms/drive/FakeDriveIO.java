@@ -1,10 +1,10 @@
 package first.robot.mechanisms.drive;
 
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.Arrays;
-import org.wpilib.math.kinematics.ChassisVelocities;
-import org.wpilib.math.kinematics.SwerveDriveKinematics;
-import org.wpilib.math.kinematics.SwerveModuleVelocity;
-import org.wpilib.system.Timer;
 
 final class FakeDriveIO implements DriveIO {
     enum Request {
@@ -21,7 +21,7 @@ final class FakeDriveIO implements DriveIO {
     private final double[] angles;
     private double yaw = 0.0;
     Request last = Request.NONE;
-    ChassisVelocities robotVelocity = new ChassisVelocities();
+    ChassisSpeeds robotVelocity = new ChassisSpeeds();
     boolean gyroConnected = true;
 
     FakeDriveIO(SwerveConfig config) {
@@ -34,12 +34,12 @@ final class FakeDriveIO implements DriveIO {
     @Override
     public void updateInputs(DriveIOInputs inputs) {
         if (last == Request.VELOCITY) {
-            SwerveModuleVelocity[] states = kinematics.toSwerveModuleVelocities(robotVelocity);
+            SwerveModuleState[] states = kinematics.toSwerveModuleStates(robotVelocity);
             for (int j = 0; j < modules; j++) {
-                distances[j] += states[j].velocity * DT;
+                distances[j] += states[j].speedMetersPerSecond * DT;
                 angles[j] = states[j].angle.getRadians();
             }
-            yaw += robotVelocity.omega * DT;
+            yaw += robotVelocity.omegaRadiansPerSecond * DT;
         }
         inputs.odometryTimestamps = new double[] {Timer.getTimestamp()};
         inputs.odometryYawRad = new double[] {yaw};
@@ -58,7 +58,7 @@ final class FakeDriveIO implements DriveIO {
     }
 
     @Override
-    public void setRobotVelocity(ChassisVelocities velocity) {
+    public void setRobotVelocity(ChassisSpeeds velocity) {
         last = Request.VELOCITY;
         robotVelocity = velocity;
     }

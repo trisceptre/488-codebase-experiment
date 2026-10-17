@@ -3,11 +3,11 @@ package first.robot.vision;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import first.robot.vision.VisionFilter.Rejection;
 import first.robot.vision.VisionIO.PoseObservation;
 import org.junit.jupiter.api.Test;
-import org.wpilib.math.geometry.Pose3d;
-import org.wpilib.math.geometry.Rotation3d;
 
 class VisionFilterTest {
     private static final VisionFilter.Settings S = VisionFilter.Settings.DEFAULTS;
@@ -15,7 +15,7 @@ class VisionFilterTest {
     private static final double WIDTH = 8.1;
 
     private static PoseObservation obs(double x, double y, double z, double ambiguity, int tags, double dist) {
-        return new PoseObservation(1.0, new Pose3d(x, y, z, Rotation3d.ZERO), ambiguity, tags, dist);
+        return new PoseObservation(1.0, new Pose3d(x, y, z, Rotation3d.kZero), ambiguity, tags, dist);
     }
 
     private static Rejection check(PoseObservation o) {

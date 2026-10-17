@@ -37,7 +37,7 @@
     "org.mockito.Mockito.*",
     "org.mockito.ArgumentMatchers.*",
     "org.mockito.Answers.*",
-    "org.wpilib.units.Units.*"
+    "edu.wpi.first.units.Units.*"
   ],
   "java.completion.filteredTypes": [
     "java.awt.*",

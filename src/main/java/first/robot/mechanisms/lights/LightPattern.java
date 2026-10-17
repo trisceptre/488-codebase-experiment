@@ -1,6 +1,6 @@
 package first.robot.mechanisms.lights;
 
-import org.wpilib.util.Color;
+import edu.wpi.first.wpilibj.util.Color;
 
 public sealed interface LightPattern {
     record Off() implements LightPattern {}
