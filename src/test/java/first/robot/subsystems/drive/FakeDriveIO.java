@@ -6,7 +6,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.Arrays;
 
-final class FakeDriveIO implements DriveIO {
+public final class FakeDriveIO implements DriveIO {
     enum Request {
         NONE,
         VELOCITY,
@@ -24,7 +24,7 @@ final class FakeDriveIO implements DriveIO {
     ChassisSpeeds robotVelocity = new ChassisSpeeds();
     boolean gyroConnected = true;
 
-    FakeDriveIO(SwerveConfig config) {
+    public FakeDriveIO(SwerveConfig config) {
         kinematics = config.kinematics();
         modules = config.moduleCount();
         distances = new double[modules];

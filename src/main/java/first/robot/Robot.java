@@ -15,6 +15,7 @@ import first.robot.game.GameCommands;
 import first.robot.game.GameMechanisms;
 import first.robot.game.ShotCalculator;
 import first.robot.game.StatusLights;
+import first.robot.opmodes.auto.Autos;
 import first.robot.opmodes.teleop.TeleopBindings;
 import first.robot.sim.FuelSim;
 import first.robot.subsystems.drive.Drive;
@@ -56,6 +57,8 @@ public class Robot extends LoggedRobot {
     private final DriveIOCTRESim driveSim;
     private final VisionSystemSim visionSim;
     private final Optional<FuelSim> fuelSim;
+    private final Autos autos;
+    private Command autonomousCommand = null;
 
     public Robot() {
         Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -182,6 +185,8 @@ public class Robot extends LoggedRobot {
                 robotState,
                 game);
 
+        autos = new Autos(drive, robotState, config.drive(), game);
+
         scheduler.onCommandInitialize(runningCommands::add);
         scheduler.onCommandFinish(runningCommands::remove);
         scheduler.onCommandInterrupt(runningCommands::remove);
@@ -205,6 +210,20 @@ public class Robot extends LoggedRobot {
         Logger.recordOutput(
                 "Scheduler/Running",
                 runningCommands.stream().map(Command::getName).toArray(String[]::new));
+    }
+
+    @Override
+    public void autonomousInit() {
+        fuelSim.ifPresent(FuelSim::reset);
+        autonomousCommand = autos.selected();
+        scheduler.schedule(autonomousCommand);
+    }
+
+    @Override
+    public void teleopInit() {
+        if (autonomousCommand != null) {
+            autonomousCommand.cancel();
+        }
     }
 
     @Override

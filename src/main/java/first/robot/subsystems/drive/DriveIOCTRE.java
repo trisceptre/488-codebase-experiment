@@ -7,6 +7,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.ArrayDeque;
@@ -108,6 +109,11 @@ public class DriveIOCTRE implements DriveIO, AutoCloseable {
     @Override
     public void idle() {
         drivetrain.setControl(idleRequest);
+    }
+
+    @Override
+    public void resetPose(Pose2d pose) {
+        drivetrain.resetPose(pose);
     }
 
     @Override

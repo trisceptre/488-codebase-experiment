@@ -11,6 +11,9 @@ public record JoystickInputs(
         DoubleSupplier rightX,
         DoubleSupplier rightY) {
 
+    public static final JoystickInputs NONE =
+            new JoystickInputs(() -> 0.0, () -> 0.0, () -> 0.0, () -> 0.0, () -> 0.0, () -> 0.0);
+
     public static JoystickInputs from(CommandXboxController gamepad) {
         return new JoystickInputs(
                 gamepad::getLeftX,

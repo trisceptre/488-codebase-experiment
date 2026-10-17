@@ -1,5 +1,6 @@
 package first.robot.subsystems.drive;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import org.littletonrobotics.junction.AutoLog;
 
@@ -26,4 +27,6 @@ public interface DriveIO {
     default void stopWithX() {}
 
     default void idle() {}
+
+    default void resetPose(Pose2d pose) {}
 }

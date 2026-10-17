@@ -2,9 +2,12 @@ package first.robot.subsystems.drive;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -41,6 +44,7 @@ public final class Drive implements Subsystem, LoopParticipant, AutoCloseable {
     private final RobotState robotState;
     private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
     private final HeadingModule heading;
+    private final SwerveDriveKinematics kinematics;
     private final Debouncer[] moduleDebouncers;
     private final Alert[] moduleAlerts;
     private final Alert gyroAlert = new Alert("Pigeon disconnected: heading control off", Alert.AlertType.kError);
@@ -72,6 +76,7 @@ public final class Drive implements Subsystem, LoopParticipant, AutoCloseable {
         this.config = config;
         this.io = io;
         this.robotState = robotState;
+        this.kinematics = config.kinematics();
         this.heading = new HeadingModule(headingKp.get(), headingKd.get(), config.maxAngularSpeedRadPerSec());
         int n = config.moduleCount();
         lastModuleDistancesMeters = new double[n];
@@ -164,6 +169,26 @@ public final class Drive implements Subsystem, LoopParticipant, AutoCloseable {
     public void runFieldVelocity(ChassisSpeeds velocity) {
         request = Request.VELOCITY;
         fieldVelocity = velocity;
+    }
+
+    public void runRobotVelocity(ChassisSpeeds velocity) {
+        runFieldVelocity(ChassisSpeeds.fromRobotRelativeSpeeds(velocity, robotState.getRotation()));
+    }
+
+    public ChassisSpeeds getRobotRelativeSpeeds() {
+        int n = config.moduleCount();
+        var states = new SwerveModuleState[n];
+        for (int j = 0; j < n; j++) {
+            states[j] = new SwerveModuleState(
+                    j < inputs.moduleSpeedsMetersPerSec.length ? inputs.moduleSpeedsMetersPerSec[j] : 0.0,
+                    Rotation2d.fromRadians(j < inputs.moduleAnglesRad.length ? inputs.moduleAnglesRad[j] : 0.0));
+        }
+        return kinematics.toChassisSpeeds(states);
+    }
+
+    public void resetPose(Pose2d pose) {
+        robotState.resetPose(pose);
+        io.resetPose(pose);
     }
 
     public void stop() {
