@@ -1,4 +1,4 @@
-package first.robot.mechanisms.lights;
+package first.robot.subsystems.lights;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.controls.EmptyAnimation;

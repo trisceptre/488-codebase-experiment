@@ -2,8 +2,8 @@ package first.robot.opmodes.teleop;
 
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import first.robot.RobotState;
-import first.robot.mechanisms.drive.Drive;
-import first.robot.mechanisms.drive.JoystickInputs;
+import first.robot.subsystems.drive.Drive;
+import first.robot.subsystems.drive.JoystickInputs;
 
 public final class TeleopBindings {
     public TeleopBindings(
