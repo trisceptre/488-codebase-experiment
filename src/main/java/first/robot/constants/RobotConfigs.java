@@ -30,10 +30,10 @@ public final class RobotConfigs {
     }
 
     private static final List<CameraInfo> CAMERAS_2026 = List.of(
-            new CameraInfo("Left", "AprilTagLeft", mount(-0.28, 0.2965, 0.19, -25.5, 90), 1.0),
-            new CameraInfo("Right", "AprilTagRight", mount(-0.28, -0.2965, 0.19, -25.5, 270), 1.0),
-            new CameraInfo("Front", "AprilTagFront", mount(0.0, inches(0.25), inches(20.075958), -23, 0), 1.0),
-            new CameraInfo("Back", "AprilTagBack", mount(-0.3429, 0.0, 0.487, -15, 180), 1.0));
+            new CameraInfo("Left", "Apriltag_Left_Camera", mount(-0.28, 0.2965, 0.19, -25.5, 90), 1.0),
+            new CameraInfo("Right", "Apriltag_Right_Camera", mount(-0.28, -0.2965, 0.19, -25.5, 270), 1.0),
+            new CameraInfo("Front", "Apriltag_Front_Camera", mount(0.0, inches(0.25), inches(20.075958), -23, 0), 1.0),
+            new CameraInfo("Back", "Apriltag_Back_Camera", mount(-0.3429, 0.0, 0.487, -15, 180), 1.0));
 
     private static final List<CameraInfo> CAMERAS_2025 = List.of(
             new CameraInfo(
