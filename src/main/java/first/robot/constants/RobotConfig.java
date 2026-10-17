@@ -14,5 +14,13 @@ public record RobotConfig(
         int pdhCanId,
         Optional<Superstructure> superstructure) {
 
-    public record Candle(int canId, String bus, int ledCount) {}
+    public record Candle(int canId, String bus, List<Integer> segments, double brightness) {
+        public Candle {
+            segments = List.copyOf(segments);
+        }
+
+        public int ledCount() {
+            return segments.stream().mapToInt(Integer::intValue).sum();
+        }
+    }
 }

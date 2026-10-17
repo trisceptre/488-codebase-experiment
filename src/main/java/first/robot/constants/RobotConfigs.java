@@ -67,7 +67,7 @@ public final class RobotConfigs {
             DRIVE_2026,
             CAMERAS_2026,
             AprilTagFields.k2026RebuiltWelded,
-            Optional.of(new RobotConfig.Candle(57, "*", 68)),
+            Optional.of(new RobotConfig.Candle(57, "*", List.of(8, 30, 30), 0.15)),
             PDH_CAN_ID,
             Optional.of(Hardware2026.SUPERSTRUCTURE));
 

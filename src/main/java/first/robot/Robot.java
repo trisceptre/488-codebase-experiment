@@ -124,10 +124,13 @@ public class Robot extends LoggedRobot {
         }
         Vision vision = new Vision(config.cameras(), cameraIOs, field, robotState);
 
-        Lights lights = new Lights(config.lights()
-                .filter(candle -> Constants.currentMode == Constants.Mode.REAL)
-                .<LightsIO>map(candle -> new LightsIOCANdle(candle.canId(), candle.bus(), candle.ledCount()))
-                .orElseGet(() -> new LightsIO() {}));
+        Lights lights = new Lights(
+                config.lights()
+                        .filter(candle -> Constants.currentMode == Constants.Mode.REAL)
+                        .<LightsIO>map(candle -> new LightsIOCANdle(
+                                candle.canId(), candle.bus(), candle.segments(), candle.brightness()))
+                        .orElseGet(() -> new LightsIO() {}),
+                config.lights().map(candle -> candle.segments().size()).orElse(1));
         PowerIO powerIO = switch (Constants.currentMode) {
             case REAL -> new PowerIOPDH(config.pdhCanId());
             case SIM -> new PowerIOSim();
