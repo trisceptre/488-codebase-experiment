@@ -1,5 +1,6 @@
 package first.robot.vision;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import first.robot.vision.VisionIO.PoseObservation;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,13 +9,12 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
-import org.wpilib.fields.Field;
 
 public class VisionIOPhotonVision implements VisionIO {
     private final PhotonCamera camera;
     private final PhotonPoseEstimator estimator;
 
-    public VisionIOPhotonVision(CameraInfo info, Field field) {
+    public VisionIOPhotonVision(CameraInfo info, AprilTagFieldLayout field) {
         camera = new PhotonCamera(info.photonCameraName());
         estimator = new PhotonPoseEstimator(field, info.robotToCamera());
     }
@@ -44,7 +44,7 @@ public class VisionIOPhotonVision implements VisionIO {
             totalDistance += target.getBestCameraToTarget().getTranslation().getNorm();
         }
         int count = targets.size();
-        double ambiguity = count == 1 ? targets.getFirst().getPoseAmbiguity() : 0.0;
+        double ambiguity = count == 1 ? targets.get(0).getPoseAmbiguity() : 0.0;
         return new PoseObservation(
                 estimate.timestampSeconds,
                 estimate.estimatedPose,

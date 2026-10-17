@@ -1,7 +1,7 @@
 package first.robot.util;
 
+import edu.wpi.first.wpilibj.Timer;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.system.Timer;
 
 public final class LoggedTracer {
     private static double startTime = -1.0;

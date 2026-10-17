@@ -1,5 +1,9 @@
 package first.robot.vision;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.wpilibj.Alert;
 import first.robot.LoopParticipant;
 import first.robot.RobotState;
 import first.robot.util.LoggedTunableNumber;
@@ -7,10 +11,6 @@ import first.robot.vision.VisionIO.PoseObservation;
 import java.util.ArrayList;
 import java.util.List;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.fields.Field;
-import org.wpilib.math.filter.Debouncer;
-import org.wpilib.math.geometry.Pose3d;
-import org.wpilib.util.Alert;
 
 public final class Vision implements LoopParticipant, AutoCloseable {
     private final List<CameraInfo> cameras;
@@ -35,7 +35,7 @@ public final class Vision implements LoopParticipant, AutoCloseable {
     private final LoggedTunableNumber angularStdDev =
             new LoggedTunableNumber("Vision/Filter/AngularStdDevBaselineRad", 0.06);
 
-    public Vision(List<CameraInfo> cameras, List<VisionIO> ios, Field field, RobotState robotState) {
+    public Vision(List<CameraInfo> cameras, List<VisionIO> ios, AprilTagFieldLayout field, RobotState robotState) {
         if (cameras.size() != ios.size()) {
             throw new IllegalArgumentException("one IO per camera required");
         }
@@ -46,11 +46,8 @@ public final class Vision implements LoopParticipant, AutoCloseable {
         this.robotState = robotState;
         for (CameraInfo camera : cameras) {
             inputs.add(new VisionIOInputsAutoLogged());
-            connectedDebouncers.add(new Debouncer(0.5, Debouncer.DebounceType.FALLING));
-            disconnectedAlerts.add(new Alert(
-                    "Vision/" + camera.name() + "/Disconnected",
-                    camera.name() + " camera disconnected",
-                    Alert.Level.MEDIUM));
+            connectedDebouncers.add(new Debouncer(0.5, Debouncer.DebounceType.kFalling));
+            disconnectedAlerts.add(new Alert(camera.name() + " camera disconnected", Alert.AlertType.kWarning));
         }
     }
 

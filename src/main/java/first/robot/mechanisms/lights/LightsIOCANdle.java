@@ -26,18 +26,18 @@ public class LightsIOCANdle implements LightsIO {
     @Override
     public void apply(LightPattern pattern) {
         candle.setControl(new EmptyAnimation(0));
-        switch (pattern) {
-            case LightPattern.Off _ -> candle.setControl(new SolidColor(0, lastLed).withColor(new RGBWColor()));
-            case LightPattern.Solid solid ->
-                candle.setControl(new SolidColor(0, lastLed).withColor(new RGBWColor(solid.color())));
-            case LightPattern.Larson larson ->
-                candle.setControl(new LarsonAnimation(0, lastLed)
-                        .withSlot(0)
-                        .withColor(new RGBWColor(larson.color()))
-                        .withSize(2)
-                        .withBounceMode(LarsonBounceValue.Front));
-            case LightPattern.Blink blink ->
-                candle.setControl(new StrobeAnimation(0, lastLed).withSlot(0).withColor(new RGBWColor(blink.color())));
+        if (pattern instanceof LightPattern.Solid solid) {
+            candle.setControl(new SolidColor(0, lastLed).withColor(new RGBWColor(solid.color())));
+        } else if (pattern instanceof LightPattern.Larson larson) {
+            candle.setControl(new LarsonAnimation(0, lastLed)
+                    .withSlot(0)
+                    .withColor(new RGBWColor(larson.color()))
+                    .withSize(2)
+                    .withBounceMode(LarsonBounceValue.Front));
+        } else if (pattern instanceof LightPattern.Blink blink) {
+            candle.setControl(new StrobeAnimation(0, lastLed).withSlot(0).withColor(new RGBWColor(blink.color())));
+        } else {
+            candle.setControl(new SolidColor(0, lastLed).withColor(new RGBWColor()));
         }
     }
 }

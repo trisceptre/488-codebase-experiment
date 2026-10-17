@@ -1,15 +1,14 @@
 package first.robot.testing;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.wpi.first.hal.HAL;
+import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import edu.wpi.first.wpilibj.simulation.SimHooks;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import first.robot.LoopParticipant;
 import java.util.List;
-import org.wpilib.command3.Command;
-import org.wpilib.command3.Scheduler;
-import org.wpilib.hardware.hal.HAL;
-import org.wpilib.simulation.DriverStationSim;
-import org.wpilib.simulation.SimHooks;
 
 public final class SimTestUtil {
     public static final double LOOP_SECONDS = 0.02;
@@ -17,7 +16,7 @@ public final class SimTestUtil {
     private SimTestUtil() {}
 
     public static void setUp() {
-        assertTrue(HAL.initialize());
+        assertTrue(HAL.initialize(500, 0));
         SimHooks.pauseTiming();
         setEnabled(true);
     }
@@ -40,8 +39,15 @@ public final class SimTestUtil {
         SimHooks.stepTiming(LOOP_SECONDS);
     }
 
-    public static void schedule(Scheduler scheduler, Command command) {
-        assertInstanceOf(Scheduler.ScheduleResult.Successful.class, scheduler.schedule(command));
+    public static void schedule(CommandScheduler scheduler, Command command) {
+        scheduler.schedule(command);
+        assertTrue(scheduler.isScheduled(command), command.getName() + " was not scheduled");
+    }
+
+    public static void resetScheduler(CommandScheduler scheduler) {
+        scheduler.cancelAll();
+        scheduler.unregisterAllSubsystems();
+        scheduler.clearComposedCommands();
     }
 
     public static void step(List<? extends LoopParticipant> participants) {

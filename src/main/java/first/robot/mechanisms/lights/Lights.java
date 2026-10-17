@@ -1,24 +1,24 @@
 package first.robot.mechanisms.lights;
 
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 import first.robot.LoopParticipant;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.command3.Command;
-import org.wpilib.command3.Mechanism;
-import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchState;
-import org.wpilib.util.Alert;
-import org.wpilib.util.Color;
 
-public final class Lights implements Mechanism, LoopParticipant, AutoCloseable {
+public final class Lights implements Subsystem, LoopParticipant, AutoCloseable {
     private final LightsIO io;
     private final LightsIOInputsAutoLogged inputs = new LightsIOInputsAutoLogged();
-    private final Alert disconnectedAlert =
-            new Alert("Lights/Disconnected", "Lights controller disconnected", Alert.Level.LOW);
+    private final Alert disconnectedAlert = new Alert("Lights controller disconnected", Alert.AlertType.kInfo);
     private LightPattern pattern = new LightPattern.Off();
     private LightPattern sent = null;
 
     public Lights(LightsIO io) {
         this.io = io;
+        register();
         setDefaultCommand(idle());
     }
 
@@ -27,11 +27,8 @@ public final class Lights implements Mechanism, LoopParticipant, AutoCloseable {
         return "Lights";
     }
 
-    @Override
     public Command idle() {
-        return runRepeatedly(() -> pattern = new LightPattern.Larson(allianceColor()))
-                .withPriority(Command.LOWEST_PRIORITY)
-                .named("Lights.Alliance");
+        return run(() -> pattern = new LightPattern.Larson(allianceColor())).withName("Lights.Alliance");
     }
 
     public Command solid(Color color) {
@@ -51,17 +48,13 @@ public final class Lights implements Mechanism, LoopParticipant, AutoCloseable {
     }
 
     private Command show(LightPattern shown, String name) {
-        return run(coroutine -> {
-                    pattern = shown;
-                    coroutine.park();
-                })
-                .named(name);
+        return run(() -> pattern = shown).withName(name);
     }
 
     private static Color allianceColor() {
-        return MatchState.getAlliance()
-                .map(a -> a == Alliance.RED ? Color.RED : Color.BLUE)
-                .orElse(Color.WHITE);
+        return DriverStation.getAlliance()
+                .map(a -> a == Alliance.Red ? Color.kRed : Color.kBlue)
+                .orElse(Color.kWhite);
     }
 
     @Override

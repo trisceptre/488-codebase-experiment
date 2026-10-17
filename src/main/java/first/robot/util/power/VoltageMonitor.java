@@ -1,18 +1,17 @@
 package first.robot.util.power;
 
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.wpilibj.Alert;
 import first.robot.LoopParticipant;
 import first.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.math.filter.Debouncer;
-import org.wpilib.util.Alert;
 
 public final class VoltageMonitor implements LoopParticipant, AutoCloseable {
     private final PowerIO io;
     private final PowerIOInputsAutoLogged inputs = new PowerIOInputsAutoLogged();
     private final LoggedTunableNumber lowVoltage = new LoggedTunableNumber("Power/LowVoltage", 8.0);
-    private final Debouncer lowDebouncer = new Debouncer(1.0, Debouncer.DebounceType.RISING);
-    private final Alert lowAlert =
-            new Alert("Power/LowVoltage", "Battery voltage low: brownout risk", Alert.Level.HIGH);
+    private final Debouncer lowDebouncer = new Debouncer(1.0, Debouncer.DebounceType.kRising);
+    private final Alert lowAlert = new Alert("Battery voltage low: brownout risk", Alert.AlertType.kError);
     private boolean brownoutRisk = false;
 
     public VoltageMonitor(PowerIO io) {

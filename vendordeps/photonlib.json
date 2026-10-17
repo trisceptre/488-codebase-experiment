@@ -1,9 +1,9 @@
 {
   "fileName": "photonlib.json",
   "name": "photonlib",
-  "version": "dev-v2027.0.0-alpha-2-77-gb07a46ea",
+  "version": "v2026.3.2",
   "uuid": "515fe07e-bfc6-11fa-b3de-0242ac130004",
-  "wpilibYear": "2027_alpha7",
+  "frcYear": "2026",
   "mavenUrls": [
     "https://maven.photonvision.org/repository/internal",
     "https://maven.photonvision.org/repository/snapshots"
@@ -13,25 +13,12 @@
     {
       "groupId": "org.photonvision",
       "artifactId": "photontargeting-cpp",
-      "version": "dev-v2027.0.0-alpha-2-77-gb07a46ea",
+      "version": "v2026.3.2",
       "skipInvalidPlatforms": true,
       "isJar": false,
       "validPlatforms": [
         "windowsx86-64",
-        "linuxsystemcore",
-        "linuxx86-64",
-        "osxuniversal"
-      ]
-    },
-    {
-      "groupId": "org.wpilib.fields",
-      "artifactId": "fields-cpp",
-      "version": "wpilib",
-      "skipInvalidPlatforms": true,
-      "isJar": false,
-      "validPlatforms": [
-        "windowsx86-64",
-        "linuxsystemcore",
+        "linuxathena",
         "linuxx86-64",
         "osxuniversal"
       ]
@@ -41,14 +28,14 @@
     {
       "groupId": "org.photonvision",
       "artifactId": "photonlib-cpp",
-      "version": "dev-v2027.0.0-alpha-2-77-gb07a46ea",
+      "version": "v2026.3.2",
       "libName": "photonlib",
       "headerClassifier": "headers",
       "sharedLibrary": true,
       "skipInvalidPlatforms": true,
       "binaryPlatforms": [
         "windowsx86-64",
-        "linuxsystemcore",
+        "linuxathena",
         "linuxx86-64",
         "osxuniversal"
       ]
@@ -56,14 +43,14 @@
     {
       "groupId": "org.photonvision",
       "artifactId": "photontargeting-cpp",
-      "version": "dev-v2027.0.0-alpha-2-77-gb07a46ea",
+      "version": "v2026.3.2",
       "libName": "photontargeting",
       "headerClassifier": "headers",
       "sharedLibrary": true,
       "skipInvalidPlatforms": true,
       "binaryPlatforms": [
         "windowsx86-64",
-        "linuxsystemcore",
+        "linuxathena",
         "linuxx86-64",
         "osxuniversal"
       ]
@@ -73,12 +60,12 @@
     {
       "groupId": "org.photonvision",
       "artifactId": "photonlib-java",
-      "version": "dev-v2027.0.0-alpha-2-77-gb07a46ea"
+      "version": "v2026.3.2"
     },
     {
       "groupId": "org.photonvision",
       "artifactId": "photontargeting-java",
-      "version": "dev-v2027.0.0-alpha-2-77-gb07a46ea"
+      "version": "v2026.3.2"
     }
   ]
 }

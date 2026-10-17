@@ -1,11 +1,11 @@
 package first.robot.generated;
 
-import static org.wpilib.units.Units.Amps;
-import static org.wpilib.units.Units.Inches;
-import static org.wpilib.units.Units.KilogramSquareMeters;
-import static org.wpilib.units.Units.MetersPerSecond;
-import static org.wpilib.units.Units.Rotations;
-import static org.wpilib.units.Units.Volts;
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.KilogramSquareMeters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
@@ -20,12 +20,12 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants.DriveMotorArrangement;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerFeedbackType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerMotorArrangement;
 import com.ctre.phoenix6.swerve.SwerveModuleConstantsFactory;
-import org.wpilib.units.measure.Angle;
-import org.wpilib.units.measure.Current;
-import org.wpilib.units.measure.Distance;
-import org.wpilib.units.measure.LinearVelocity;
-import org.wpilib.units.measure.MomentOfInertia;
-import org.wpilib.units.measure.Voltage;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.MomentOfInertia;
+import edu.wpi.first.units.measure.Voltage;
 
 public class TunerConstants {
     private static final Slot0Configs steerGains = new Slot0Configs()
@@ -74,7 +74,7 @@ public class TunerConstants {
     private static final Voltage kDriveFrictionVoltage = Volts.of(0.2);
 
     public static final SwerveDrivetrainConstants DrivetrainConstants =
-            new SwerveDrivetrainConstants().withNetwork(kCANBus).withPigeon2Id(kPigeonId);
+            new SwerveDrivetrainConstants().withCANBusName(kCANBus.getName()).withPigeon2Id(kPigeonId);
 
     private static final SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
             ConstantCreator = new SwerveModuleConstantsFactory<

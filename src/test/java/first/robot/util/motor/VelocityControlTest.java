@@ -1,17 +1,17 @@
 package first.robot.util.motor;
 
+import static edu.wpi.first.units.Units.RPM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wpilib.units.Units.RPM;
 
+import edu.wpi.first.math.system.plant.DCMotor;
 import first.robot.testing.SimTestUtil;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.wpilib.math.system.DCMotor;
 
 class VelocityControlTest {
     private MotorIOSim io;

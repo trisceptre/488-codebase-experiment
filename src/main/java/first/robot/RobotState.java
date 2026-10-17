@@ -1,22 +1,23 @@
 package first.robot;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import first.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
-import org.wpilib.command3.Command;
-import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchState;
-import org.wpilib.math.estimator.SwerveDrivePoseEstimator;
-import org.wpilib.math.geometry.Pose2d;
-import org.wpilib.math.geometry.Pose3d;
-import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.math.kinematics.SwerveDriveKinematics;
-import org.wpilib.math.kinematics.SwerveDriveOdometry;
-import org.wpilib.math.kinematics.SwerveModulePosition;
-import org.wpilib.math.linalg.Matrix;
-import org.wpilib.math.numbers.N1;
-import org.wpilib.math.numbers.N3;
-import org.wpilib.system.Timer;
-import org.wpilib.util.Alert;
 
 public final class RobotState implements LoopParticipant, AutoCloseable {
     public record OdometryObservation(double timestamp, SwerveModulePosition[] wheelPositions, Rotation2d yaw) {}
@@ -28,7 +29,7 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
     private final LoggedTunableNumber visionTimeoutSeconds =
             new LoggedTunableNumber("RobotState/VisionTimeoutSeconds", 5.0);
     private final Alert noVisionAlert =
-            new Alert("RobotState/NoVision", "No accepted vision recently; pose is odometry only", Alert.Level.MEDIUM);
+            new Alert("No accepted vision recently; pose is odometry only", Alert.AlertType.kWarning);
     private double lastVisionTimestamp = Double.NEGATIVE_INFINITY;
 
     public RobotState(SwerveDriveKinematics kinematics, int moduleCount) {
@@ -36,8 +37,8 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
         for (int i = 0; i < moduleCount; i++) {
             zero[i] = new SwerveModulePosition();
         }
-        poseEstimator = new SwerveDrivePoseEstimator(kinematics, Rotation2d.ZERO, zero, Pose2d.ZERO);
-        odometry = new SwerveDriveOdometry(kinematics, Rotation2d.ZERO, zero, Pose2d.ZERO);
+        poseEstimator = new SwerveDrivePoseEstimator(kinematics, Rotation2d.kZero, zero, Pose2d.kZero);
+        odometry = new SwerveDriveOdometry(kinematics, Rotation2d.kZero, zero, Pose2d.kZero);
     }
 
     public void addOdometryObservation(OdometryObservation observation) {
@@ -56,7 +57,7 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
     }
 
     public Pose2d getOdometryPose() {
-        return odometry.getPose();
+        return odometry.getPoseMeters();
     }
 
     public Rotation2d getRotation() {
@@ -73,12 +74,14 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
     }
 
     public Command resetRotationCommand() {
-        return Command.noRequirements(_ -> {
-                    boolean red =
-                            MatchState.getAlliance().map(a -> a == Alliance.RED).orElse(false);
-                    resetRotation(red ? Rotation2d.k180deg : Rotation2d.ZERO);
+        return Commands.runOnce(() -> {
+                    boolean red = DriverStation.getAlliance()
+                            .map(a -> a == Alliance.Red)
+                            .orElse(false);
+                    resetRotation(red ? Rotation2d.k180deg : Rotation2d.kZero);
                 })
-                .named("RobotState.ResetRotation");
+                .ignoringDisable(true)
+                .withName("RobotState.ResetRotation");
     }
 
     public double getSecondsSinceVision() {
@@ -90,8 +93,8 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
         Logger.recordOutput("RobotState/EstimatedPose", getEstimatedPose());
         Logger.recordOutput("RobotState/OdometryPose", getOdometryPose());
         Logger.recordOutput("RobotState/SecondsSinceVision", Math.min(getSecondsSinceVision(), 1e6));
-        noVisionAlert.set(org.wpilib.driverstation.RobotState.isEnabled()
-                && getSecondsSinceVision() > visionTimeoutSeconds.get());
+        noVisionAlert.set(
+                edu.wpi.first.wpilibj.RobotState.isEnabled() && getSecondsSinceVision() > visionTimeoutSeconds.get());
     }
 
     @Override

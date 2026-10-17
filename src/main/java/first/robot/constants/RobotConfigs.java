@@ -1,42 +1,53 @@
 package first.robot.constants;
 
-import static org.wpilib.units.Units.Inches;
-import static org.wpilib.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import first.robot.generated.TunerConstants;
+import first.robot.generated.TunerConstants2025;
 import first.robot.mechanisms.drive.SwerveConfig;
 import first.robot.vision.CameraInfo;
 import java.util.List;
-import org.wpilib.fields.Fields;
-import org.wpilib.hardware.bus.CANPort;
-import org.wpilib.math.geometry.Rotation3d;
-import org.wpilib.math.geometry.Transform3d;
-import org.wpilib.math.geometry.Translation3d;
+import java.util.Optional;
 
 public final class RobotConfigs {
     private RobotConfigs() {}
+
+    private static final int PDH_CAN_ID = 1;
 
     private static Transform3d mount(double x, double y, double z, double pitchDeg, double yawDeg) {
         return new Transform3d(
                 new Translation3d(x, y, z), new Rotation3d(0.0, Math.toRadians(pitchDeg), Math.toRadians(yawDeg)));
     }
 
-    private static final List<CameraInfo> CAMERAS = List.of(
+    private static double inches(double value) {
+        return Inches.of(value).in(Meters);
+    }
+
+    private static final List<CameraInfo> CAMERAS_2026 = List.of(
             new CameraInfo("Left", "AprilTagLeft", mount(-0.28, 0.2965, 0.19, -25.5, 90), 1.0),
             new CameraInfo("Right", "AprilTagRight", mount(-0.28, -0.2965, 0.19, -25.5, 270), 1.0),
-            new CameraInfo(
-                    "Front",
-                    "AprilTagFront",
-                    mount(
-                            0.0,
-                            Inches.of(0.25).in(org.wpilib.units.Units.Meters),
-                            Inches.of(20.075958).in(org.wpilib.units.Units.Meters),
-                            -23,
-                            0),
-                    1.0),
+            new CameraInfo("Front", "AprilTagFront", mount(0.0, inches(0.25), inches(20.075958), -23, 0), 1.0),
             new CameraInfo("Back", "AprilTagBack", mount(-0.3429, 0.0, 0.487, -15, 180), 1.0));
 
-    private static final SwerveConfig DRIVE = SwerveConfig.create(
+    private static final List<CameraInfo> CAMERAS_2025 = List.of(
+            new CameraInfo(
+                    "FrontLeft",
+                    "Apriltag_FrontLeft_Camera",
+                    mount(inches(10.14), inches(6.535), inches(6.7), -21, 0),
+                    1.0),
+            new CameraInfo(
+                    "FrontRight",
+                    "Apriltag_FrontRight_Camera",
+                    mount(inches(10.14), inches(-6.535), inches(6.7), -21, 0),
+                    1.0));
+
+    private static final SwerveConfig DRIVE_2026 = SwerveConfig.create(
             TunerConstants.DrivetrainConstants,
             TunerConstants.FrontLeft,
             TunerConstants.FrontRight,
@@ -44,14 +55,30 @@ public final class RobotConfigs {
             TunerConstants.BackRight,
             TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
 
-    public static final RobotConfig COMP =
-            new RobotConfig(DRIVE, CAMERAS, Fields.FRC_2026_REBUILT_WELDED, 57, "*", 8, CANPort.CAN_S0);
+    private static final SwerveConfig DRIVE_2025 = SwerveConfig.create(
+            TunerConstants2025.DrivetrainConstants,
+            TunerConstants2025.FrontLeft,
+            TunerConstants2025.FrontRight,
+            TunerConstants2025.BackLeft,
+            TunerConstants2025.BackRight,
+            TunerConstants2025.kSpeedAt12Volts.in(MetersPerSecond));
 
-    public static final RobotConfig SIM = COMP;
+    public static final RobotConfig COMP_2026 = new RobotConfig(
+            DRIVE_2026,
+            CAMERAS_2026,
+            AprilTagFields.k2026RebuiltWelded,
+            Optional.of(new RobotConfig.Candle(57, "*", 68)),
+            PDH_CAN_ID);
+
+    public static final RobotConfig CHASSIS_2025 =
+            new RobotConfig(DRIVE_2025, CAMERAS_2025, AprilTagFields.k2026RebuiltWelded, Optional.empty(), PDH_CAN_ID);
+
+    public static final RobotConfig SIM = COMP_2026;
 
     public static RobotConfig forIdentity(RobotIdentity identity) {
         return switch (identity) {
-            case COMP -> COMP;
+            case COMP_2026 -> COMP_2026;
+            case CHASSIS_2025 -> CHASSIS_2025;
             case SIM -> SIM;
         };
     }

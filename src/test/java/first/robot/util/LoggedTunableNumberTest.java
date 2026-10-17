@@ -4,15 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.wpi.first.hal.HAL;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.wpilib.hardware.hal.HAL;
-import org.wpilib.networktables.NetworkTableInstance;
 
 class LoggedTunableNumberTest {
     @BeforeAll
     static void initHal() {
-        assertTrue(HAL.initialize());
+        assertTrue(HAL.initialize(500, 0));
     }
 
     @Test

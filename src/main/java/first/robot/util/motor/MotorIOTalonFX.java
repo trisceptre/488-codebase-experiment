@@ -14,16 +14,16 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
+import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Alert;
 import first.robot.util.PhoenixUtil;
 import java.util.ArrayList;
 import java.util.List;
-import org.wpilib.math.util.Units;
-import org.wpilib.units.measure.Angle;
-import org.wpilib.units.measure.AngularVelocity;
-import org.wpilib.units.measure.Current;
-import org.wpilib.units.measure.Temperature;
-import org.wpilib.units.measure.Voltage;
-import org.wpilib.util.Alert;
 
 public class MotorIOTalonFX implements MotorIO, AutoCloseable {
     private static final int CONFIG_ATTEMPTS = 3;
@@ -82,10 +82,7 @@ public class MotorIOTalonFX implements MotorIO, AutoCloseable {
             PhoenixUtil.registerSignals(bus, current, temp);
         }
 
-        configFailedAlert = new Alert(
-                config.name() + "/ConfigFailed",
-                "Config failed: " + String.join(", ", configFailures),
-                Alert.Level.HIGH);
+        configFailedAlert = new Alert("Config failed: " + String.join(", ", configFailures), Alert.AlertType.kError);
         configFailedAlert.set(!configFailures.isEmpty());
     }
 
