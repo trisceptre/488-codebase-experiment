@@ -102,9 +102,11 @@ public class Robot extends LoggedRobot {
         RobotState robotState =
                 new RobotState(config.drive().kinematics(), config.drive().moduleCount());
 
+        boolean offsetsRead = true;
         DriveIO driveIO;
         switch (Constants.currentMode) {
             case REAL -> {
+                offsetsRead = DriveIOCTRE.useOffsetsStoredOnEncoders(config.drive());
                 driveIO = new DriveIOCTRE(config.drive());
                 driveSim = null;
             }
@@ -173,9 +175,8 @@ public class Robot extends LoggedRobot {
                 ? mechanisms.map(mech -> new FuelSim(config.drive(), mech, driveSim::truePose))
                 : Optional.empty();
 
-        boolean offsetsMissing = config.drive().modules().stream().anyMatch(m -> m.EncoderOffset == 0.0);
-        new Alert("CANcoder offsets not set in TunerConstants", Alert.AlertType.kError)
-                .set(Constants.currentMode == Constants.Mode.REAL && offsetsMissing);
+        new Alert("Could not read CANcoder offsets; wheels may be misaligned", Alert.AlertType.kError)
+                .set(!offsetsRead);
 
         new TeleopBindings(
                 new CommandXboxController(DriverConstants.DRIVER_CONTROLLER_PORT),

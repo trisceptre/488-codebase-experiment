@@ -1,6 +1,9 @@
 package first.robot.subsystems.drive;
 
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.configs.MagnetSensorConfigs;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
@@ -10,10 +13,13 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Timer;
+import first.robot.util.PhoenixUtil;
 import java.util.ArrayDeque;
 
 public class DriveIOCTRE implements DriveIO, AutoCloseable {
     private static final int QUEUE_CAPACITY = 64;
+    private static final int CONFIG_ATTEMPTS = 3;
+    private static final double CONFIG_TIMEOUT_SECONDS = 0.25;
 
     private record Sample(double ctreTimestamp, double yawRad, double[] distances, double[] angles) {}
 
@@ -35,6 +41,24 @@ public class DriveIOCTRE implements DriveIO, AutoCloseable {
                 config.drivetrain(),
                 config.modules().toArray(new SwerveModuleConstants<?, ?, ?>[0]));
         drivetrain.registerTelemetry(this::onTelemetry);
+    }
+
+    public static boolean useOffsetsStoredOnEncoders(SwerveConfig config) {
+        var bus = new CANBus(config.drivetrain().CANBusName);
+        boolean allRead = true;
+        for (SwerveModuleConstants<?, ?, ?> module : config.modules()) {
+            try (var encoder = new CANcoder(module.EncoderId, bus)) {
+                var magnet = new MagnetSensorConfigs();
+                StatusCode status = PhoenixUtil.tryUntilOk(
+                        CONFIG_ATTEMPTS, () -> encoder.getConfigurator().refresh(magnet, CONFIG_TIMEOUT_SECONDS));
+                if (status.isOK()) {
+                    module.withEncoderOffset(magnet.MagnetOffset);
+                } else {
+                    allRead = false;
+                }
+            }
+        }
+        return allRead;
     }
 
     private void onTelemetry(SwerveDriveState state) {
