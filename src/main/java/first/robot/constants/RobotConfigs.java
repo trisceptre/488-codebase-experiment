@@ -10,7 +10,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import first.robot.generated.TunerConstants;
 import first.robot.generated.TunerConstants2025;
-import first.robot.mechanisms.drive.SwerveConfig;
+import first.robot.subsystems.drive.SwerveConfig;
 import first.robot.vision.CameraInfo;
 import java.util.List;
 import java.util.Optional;

@@ -1,4 +1,4 @@
-package first.robot.mechanisms.lights;
+package first.robot.subsystems.lights;
 
 import edu.wpi.first.wpilibj.util.Color;
 

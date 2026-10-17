@@ -1,4 +1,4 @@
-package first.robot.mechanisms.drive;
+package first.robot.subsystems.drive;
 
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.hardware.CANcoder;
