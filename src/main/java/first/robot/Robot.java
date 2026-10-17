@@ -1,78 +1,173 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package first.robot;
 
-import static first.robot.constants.FieldConstants.NEUTRAL_ZONE;
-import static org.wpilib.units.Units.Meters;
-
+import first.robot.constants.Constants;
+import first.robot.constants.DriverConstants;
+import first.robot.constants.RobotConfig;
+import first.robot.constants.RobotConfigs;
+import first.robot.constants.RobotIdentity;
+import first.robot.mechanisms.drive.Drive;
+import first.robot.mechanisms.drive.DriveIO;
+import first.robot.mechanisms.drive.DriveIOCTRE;
+import first.robot.mechanisms.drive.DriveIOCTRESim;
+import first.robot.mechanisms.lights.Lights;
+import first.robot.mechanisms.lights.LightsIO;
+import first.robot.mechanisms.lights.LightsIOCANdle;
+import first.robot.opmodes.teleop.TeleopBindings;
+import first.robot.util.LoggedTracer;
+import first.robot.util.NoFMSNT4Publisher;
+import first.robot.util.PhoenixUtil;
+import first.robot.util.power.PowerIO;
+import first.robot.util.power.PowerIOPDH;
+import first.robot.util.power.PowerIOSim;
+import first.robot.util.power.VoltageMonitor;
+import first.robot.vision.CameraInfo;
+import first.robot.vision.Vision;
+import first.robot.vision.VisionIO;
+import first.robot.vision.VisionIOPhotonVision;
+import first.robot.vision.VisionIOPhotonVisionSim;
+import java.util.ArrayList;
+import java.util.List;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import org.photonvision.simulation.VisionSystemSim;
 import org.wpilib.command3.Command;
 import org.wpilib.command3.Scheduler;
-import org.wpilib.command3.Trigger;
 import org.wpilib.command3.button.CommandGamepad;
-import org.wpilib.epilogue.Epilogue;
-import org.wpilib.epilogue.Logged;
-import first.robot.mechanisms.Intake;
-import first.robot.mechanisms.Shooter;
-import first.robot.mechanisms.SwerveDrive;
-import org.wpilib.framework.OpModeRobot;
-import org.wpilib.math.geometry.Pose2d;
+import org.wpilib.fields.Field;
+import org.wpilib.util.Alert;
 
-@Logged
-public class Robot extends OpModeRobot {
-  public final SwerveDrive swerveDrive = new SwerveDrive();
-  public final Shooter shooter = new Shooter();
-  public final Intake intake = new Intake();
-  public final PoseEstimator poseEstimator = new PoseEstimator();
-  public final CommandGamepad controller = new CommandGamepad(1);
+// TODO: replace LoggedRobot with LoggedOpModeRobot whenever AdvantageKit updates.
+public class Robot extends LoggedRobot {
+    private final Scheduler scheduler = Scheduler.getDefault();
+    private final List<LoopParticipant> loopOrder;
+    private final DriveIOCTRESim driveSim;
+    private final VisionSystemSim visionSim;
 
-  public final Trigger inNeutralZone = new Trigger(() -> poseEstimator.inZone(NEUTRAL_ZONE));
+    public Robot() {
+        Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
+        Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+        Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+        Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
+        Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
+        Logger.recordMetadata(
+                "GitDirty",
+                switch (BuildConstants.DIRTY) {
+                    case 0 -> "All changes committed";
+                    case 1 -> "Uncommitted changes";
+                    default -> "Unknown";
+                });
+        Logger.recordMetadata("Mode", Constants.currentMode.name());
 
-  // Store the scheduler in a field for Epilogue to pick up and log for us
-  private final Scheduler scheduler = Scheduler.getDefault();
+        switch (Constants.currentMode) {
+            case REAL -> {
+                Logger.addDataReceiver(new WPILOGWriter());
+                Logger.addDataReceiver(new NoFMSNT4Publisher());
+            }
+            case SIM -> {
+                Logger.addDataReceiver(new WPILOGWriter("logs"));
+                Logger.addDataReceiver(new NT4Publisher());
+            }
+            case REPLAY -> {
+                setUseTiming(false);
+                String logPath = LogFileUtil.findReplayLog();
+                Logger.setReplaySource(new WPILOGReader(logPath));
+                Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_replay")));
+            }
+        }
+        Logger.start();
 
-  /** Initializes the robot class and sets safe default commands for all its mechanisms. */
-  public Robot() {
-    swerveDrive.setDefaultCommand(swerveDrive.idle());
-    shooter.setDefaultCommand(shooter.idle());
-    intake.setDefaultCommand(intake.idle());
-  }
+        RobotIdentity identity = RobotIdentity.detect();
+        Logger.recordMetadata("RobotIdentity", identity.name());
+        RobotConfig config = RobotConfigs.forIdentity(identity);
+        Field field = Field.loadField(config.field());
 
-  @Override
-  public void robotPeriodic() {
-    // 1. Update odometry so commands will be working with up-to-date information.
-    poseEstimator.odometryUpdate(swerveDrive.getGyroHeading(), swerveDrive.getModulePositions());
+        RobotState robotState =
+                new RobotState(config.drive().kinematics(), config.drive().moduleCount());
 
-    // 2. Run the scheduler to poll triggers and execute our commands.
-    scheduler.run();
+        DriveIO driveIO;
+        switch (Constants.currentMode) {
+            case REAL -> {
+                driveIO = new DriveIOCTRE(config.drive());
+                driveSim = null;
+            }
+            case SIM -> {
+                driveSim = new DriveIOCTRESim(config.drive());
+                driveIO = driveSim;
+            }
+            default -> {
+                driveIO = new DriveIO() {};
+                driveSim = null;
+            }
+        }
+        Drive drive = new Drive(config.drive(), driveIO, robotState);
 
-    // 3. Update telemetry.
-    Epilogue.update(this);
-  }
+        visionSim = Constants.currentMode == Constants.Mode.SIM ? new VisionSystemSim("main") : null;
+        if (visionSim != null) {
+            visionSim.addAprilTags(field);
+        }
+        List<VisionIO> cameraIOs = new ArrayList<>();
+        for (CameraInfo camera : config.cameras()) {
+            cameraIOs.add(
+                    switch (Constants.currentMode) {
+                        case REAL -> new VisionIOPhotonVision(camera, field);
+                        case SIM -> new VisionIOPhotonVisionSim(camera, field, visionSim);
+                        case REPLAY -> new VisionIO() {};
+                    });
+        }
+        Vision vision = new Vision(config.cameras(), cameraIOs, field, robotState);
 
-  /**
-   * A command that uses all the mechanisms on the robot to aim and shoot at a specific target.
-   *
-   * @param targetPose The target position to shoot at.
-   * @return A command to shoot at a target
-   */
-  public Command shootAt(Pose2d targetPose) {
-    return Command.noRequirements(
-            coroutine -> {
-              coroutine.await(swerveDrive.aimAt(poseEstimator::getEstimatedPose, targetPose));
+        Lights lights = new Lights(
+                Constants.currentMode == Constants.Mode.REAL
+                        ? new LightsIOCANdle(config.candleId(), config.candleBus(), config.candleLedCount())
+                        : new LightsIO() {});
+        PowerIO powerIO = switch (Constants.currentMode) {
+            case REAL -> new PowerIOPDH(config.pdhPort());
+            case SIM -> new PowerIOSim();
+            case REPLAY -> new PowerIO() {};
+        };
+        VoltageMonitor voltageMonitor = new VoltageMonitor(powerIO);
 
-              coroutine.awaitAll(
-                  intake.agitate(),
-                  shooter.shootAtHub(
-                      () -> {
-                        return Meters.of(
-                            targetPose
-                                .minus(poseEstimator.getEstimatedPose())
-                                .getTranslation()
-                                .getNorm());
-                      }));
-            })
-        .named("Robot.ShootAt[" + targetPose + "]");
-  }
+        loopOrder = List.of(drive, vision, robotState, lights, voltageMonitor);
+
+        boolean offsetsMissing = config.drive().modules().stream().anyMatch(m -> m.EncoderOffset == 0.0);
+        new Alert("Drive/OffsetsMissing", "CANcoder offsets not set in TunerConstants", Alert.Level.HIGH)
+                .set(Constants.currentMode == Constants.Mode.REAL && offsetsMissing);
+
+        new TeleopBindings(
+                new CommandGamepad(DriverConstants.DRIVER_CONTROLLER_PORT),
+                new CommandGamepad(DriverConstants.DEBUG_CONTROLLER_PORT),
+                drive,
+                robotState);
+    }
+
+    @Override
+    public void robotPeriodic() {
+        LoggedTracer.reset();
+        PhoenixUtil.refreshAll();
+        LoggedTracer.record("PhoenixRefresh");
+        for (LoopParticipant participant : loopOrder) {
+            participant.updateInputs();
+        }
+        LoggedTracer.record("UpdateInputs");
+        scheduler.run();
+        LoggedTracer.record("Scheduler");
+        for (LoopParticipant participant : loopOrder) {
+            participant.applyOutputs();
+        }
+        LoggedTracer.record("ApplyOutputs");
+        Logger.recordOutput(
+                "Scheduler/Running",
+                scheduler.getRunningCommands().stream().map(Command::name).toArray(String[]::new));
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        if (visionSim != null && driveSim != null) {
+            visionSim.update(driveSim.truePose());
+        }
+    }
 }

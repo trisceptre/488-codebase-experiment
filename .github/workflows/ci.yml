@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+        
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'gradle/wrapper/gradle-wrapper.properties', 'vendordeps/**') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: external
+
+      - name: checkstyle
+        run: ./gradlew spotlessCheck
+        
+      - name: compile
+        run: ./gradlew compileJava compileTestJava
+        
+      - name: test
+        run: ./gradlew test
+        
+      - name: build
+        run: ./gradlew assemble
