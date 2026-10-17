@@ -11,6 +11,10 @@ import first.robot.constants.DriverConstants;
 import first.robot.constants.RobotConfig;
 import first.robot.constants.RobotConfigs;
 import first.robot.constants.RobotIdentity;
+import first.robot.game.GameCommands;
+import first.robot.game.GameMechanisms;
+import first.robot.game.ShotCalculator;
+import first.robot.game.StatusLights;
 import first.robot.opmodes.teleop.TeleopBindings;
 import first.robot.subsystems.drive.Drive;
 import first.robot.subsystems.drive.DriveIO;
@@ -34,6 +38,7 @@ import first.robot.vision.VisionIOPhotonVisionSim;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -138,7 +143,26 @@ public class Robot extends LoggedRobot {
         };
         VoltageMonitor voltageMonitor = new VoltageMonitor(powerIO);
 
-        loopOrder = List.of(drive, vision, robotState, lights, voltageMonitor);
+        Optional<GameMechanisms> mechanisms = config.superstructure().map(GameMechanisms::create);
+        Optional<GameCommands> game =
+                mechanisms.map(mech -> new GameCommands(mech, drive, robotState, field, new ShotCalculator(field)));
+
+        var participants = new ArrayList<LoopParticipant>(List.of(drive, vision, robotState));
+        mechanisms.ifPresent(mech -> participants.addAll(mech.loopParticipants()));
+        participants.addAll(List.of(lights, voltageMonitor));
+        loopOrder = List.copyOf(participants);
+
+        mechanisms.ifPresent(mech ->
+                lights.setDefaultCommand(lights.show(() -> StatusLights.patterns(new StatusLights.State(
+                                DriverStation.isDisabled(),
+                                DriverStation.isAutonomous(),
+                                DriverStation.isTeleop(),
+                                vision.allCamerasConnected(),
+                                mech.intakeDeploy().isCalibrated(),
+                                voltageMonitor.isBrownoutRisk(),
+                                mech.hood().estimatedRatio(),
+                                Lights.allianceColor())))
+                        .withName("Lights.Status")));
 
         boolean offsetsMissing = config.drive().modules().stream().anyMatch(m -> m.EncoderOffset == 0.0);
         new Alert("CANcoder offsets not set in TunerConstants", Alert.AlertType.kError)
@@ -146,9 +170,11 @@ public class Robot extends LoggedRobot {
 
         new TeleopBindings(
                 new CommandXboxController(DriverConstants.DRIVER_CONTROLLER_PORT),
+                new CommandXboxController(DriverConstants.OPERATOR_CONTROLLER_PORT),
                 new CommandXboxController(DriverConstants.DEBUG_CONTROLLER_PORT),
                 drive,
-                robotState);
+                robotState,
+                game);
 
         scheduler.onCommandInitialize(runningCommands::add);
         scheduler.onCommandFinish(runningCommands::remove);

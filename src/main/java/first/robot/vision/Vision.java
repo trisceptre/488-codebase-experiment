@@ -21,6 +21,7 @@ public final class Vision implements LoopParticipant, AutoCloseable {
     private final double fieldLength;
     private final double fieldWidth;
     private final RobotState robotState;
+    private boolean allConnected = false;
 
     private final LoggedTunableNumber maxAmbiguity = new LoggedTunableNumber("Vision/Filter/MaxAmbiguity", 0.3);
     private final LoggedTunableNumber maxZError = new LoggedTunableNumber("Vision/Filter/MaxZErrorMeters", 0.75);
@@ -61,12 +62,15 @@ public final class Vision implements LoopParticipant, AutoCloseable {
                 maxMultiTagDistance.get(),
                 linearStdDev.get(),
                 angularStdDev.get());
+        boolean connected = true;
         for (int i = 0; i < cameras.size(); i++) {
             CameraInfo camera = cameras.get(i);
             var cameraInputs = inputs.get(i);
             ios.get(i).updateInputs(cameraInputs);
             Logger.processInputs("Vision/" + camera.name(), cameraInputs);
-            disconnectedAlerts.get(i).set(!connectedDebouncers.get(i).calculate(cameraInputs.connected));
+            boolean cameraConnected = connectedDebouncers.get(i).calculate(cameraInputs.connected);
+            disconnectedAlerts.get(i).set(!cameraConnected);
+            connected &= cameraConnected;
 
             List<Pose3d> accepted = new ArrayList<>();
             List<Pose3d> rejected = new ArrayList<>();
@@ -89,6 +93,11 @@ public final class Vision implements LoopParticipant, AutoCloseable {
             Logger.recordOutput(prefix + "/Rejected", rejected.toArray(new Pose3d[0]));
             Logger.recordOutput(prefix + "/RejectionReasons", reasons.toArray(new String[0]));
         }
+        allConnected = connected;
+    }
+
+    public boolean allCamerasConnected() {
+        return allConnected;
     }
 
     @Override
