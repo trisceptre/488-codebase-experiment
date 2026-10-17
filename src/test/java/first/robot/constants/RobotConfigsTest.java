@@ -25,4 +25,11 @@ class RobotConfigsTest {
         assertTrue(config.drive().maxLinearSpeedMetersPerSec()
                 < RobotConfigs.COMP_2026.drive().maxLinearSpeedMetersPerSec());
     }
+
+    @Test
+    void cameraNamesMatchTheCoprocessors() {
+        for (var camera : RobotConfigs.COMP_2026.cameras()) {
+            assertTrue(camera.photonCameraName().startsWith("Apriltag_"), camera.photonCameraName());
+        }
+    }
 }
