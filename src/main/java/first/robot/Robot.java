@@ -12,9 +12,7 @@ import first.robot.mechanisms.drive.DriveIOCTRESim;
 import first.robot.mechanisms.lights.Lights;
 import first.robot.mechanisms.lights.LightsIO;
 import first.robot.mechanisms.lights.LightsIOCANdle;
-import first.robot.opmodes.teleop.TeleopBindings;
 import first.robot.util.LoggedTracer;
-import first.robot.util.NoFMSNT4Publisher;
 import first.robot.util.PhoenixUtil;
 import first.robot.util.power.PowerIO;
 import first.robot.util.power.PowerIOPDH;
@@ -28,7 +26,7 @@ import first.robot.vision.VisionIOPhotonVisionSim;
 import java.util.ArrayList;
 import java.util.List;
 import org.littletonrobotics.junction.LogFileUtil;
-import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.LoggedOpModeRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
@@ -40,12 +38,18 @@ import org.wpilib.command3.button.CommandGamepad;
 import org.wpilib.fields.Field;
 import org.wpilib.util.Alert;
 
-// TODO: replace LoggedRobot with LoggedOpModeRobot whenever AdvantageKit updates.
-public class Robot extends LoggedRobot {
+public class Robot extends LoggedOpModeRobot {
+    public final Drive drive;
+    public final RobotState robotState;
+    public final CommandGamepad driverController = new CommandGamepad(DriverConstants.DRIVER_CONTROLLER_PORT);
+    public final CommandGamepad debugController = new CommandGamepad(DriverConstants.DEBUG_CONTROLLER_PORT);
+
     private final Scheduler scheduler = Scheduler.getDefault();
     private final List<LoopParticipant> loopOrder;
     private final DriveIOCTRESim driveSim;
     private final VisionSystemSim visionSim;
+    private final Alert offsetsMissingAlert =
+            new Alert("Drive/OffsetsMissing", "CANcoder offsets not set in TunerConstants", Alert.Level.HIGH);
 
     public Robot() {
         Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -65,7 +69,9 @@ public class Robot extends LoggedRobot {
         switch (Constants.currentMode) {
             case REAL -> {
                 Logger.addDataReceiver(new WPILOGWriter());
-                Logger.addDataReceiver(new NoFMSNT4Publisher());
+                if (!org.wpilib.driverstation.RobotState.isFMSAttached()) {
+                    Logger.addDataReceiver(new NT4Publisher());
+                }
             }
             case SIM -> {
                 Logger.addDataReceiver(new WPILOGWriter("logs"));
@@ -85,8 +91,7 @@ public class Robot extends LoggedRobot {
         RobotConfig config = RobotConfigs.forIdentity(identity);
         Field field = Field.loadField(config.field());
 
-        RobotState robotState =
-                new RobotState(config.drive().kinematics(), config.drive().moduleCount());
+        robotState = new RobotState(config.drive().kinematics(), config.drive().moduleCount());
 
         DriveIO driveIO;
         switch (Constants.currentMode) {
@@ -103,7 +108,7 @@ public class Robot extends LoggedRobot {
                 driveSim = null;
             }
         }
-        Drive drive = new Drive(config.drive(), driveIO, robotState);
+        drive = new Drive(config.drive(), driveIO, robotState);
 
         visionSim = Constants.currentMode == Constants.Mode.SIM ? new VisionSystemSim("main") : null;
         if (visionSim != null) {
@@ -134,14 +139,7 @@ public class Robot extends LoggedRobot {
         loopOrder = List.of(drive, vision, robotState, lights, voltageMonitor);
 
         boolean offsetsMissing = config.drive().modules().stream().anyMatch(m -> m.EncoderOffset == 0.0);
-        new Alert("Drive/OffsetsMissing", "CANcoder offsets not set in TunerConstants", Alert.Level.HIGH)
-                .set(Constants.currentMode == Constants.Mode.REAL && offsetsMissing);
-
-        new TeleopBindings(
-                new CommandGamepad(DriverConstants.DRIVER_CONTROLLER_PORT),
-                new CommandGamepad(DriverConstants.DEBUG_CONTROLLER_PORT),
-                drive,
-                robotState);
+        offsetsMissingAlert.set(Constants.currentMode == Constants.Mode.REAL && offsetsMissing);
     }
 
     @Override
