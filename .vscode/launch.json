@@ -12,7 +12,7 @@
     },
     {
       "type": "wpilib",
-      "name": "WPILib Systemcore Debug",
+      "name": "WPILib roboRIO Debug",
       "request": "launch",
       "desktop": false,
     }
