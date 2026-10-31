@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.wpilib.command3.Scheduler;
 import org.wpilib.hardware.hal.AllianceStationID;
 import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.kinematics.ChassisVelocities;
 import org.wpilib.simulation.DriverStationSim;
 
 class DriveTest {
@@ -102,6 +103,37 @@ class DriveTest {
         loops(100);
         assertTrue(drive.atHeading());
         assertEquals(45.0, robotState.getRotation().getDegrees(), 3.0);
+    }
+
+    @Test
+    void fullStickDrivesAtMaxTargetSpeed() {
+        SimTestUtil.schedule(scheduler, drive.joystickDrive(sticks, () -> false));
+        axes[1] = -1.0;
+        loops(2);
+        assertEquals(4.5, io.robotVelocity.vx, 1e-9);
+    }
+
+    @Test
+    void fullTriggerTurnsAtMaxTargetTurnRate() {
+        SimTestUtil.schedule(scheduler, drive.joystickDrive(sticks, () -> false));
+        axes[2] = 1.0;
+        loops(2);
+        assertEquals(8.0, io.robotVelocity.omega, 1e-9);
+    }
+
+    @Test
+    void wheelVelocitiesStayUnderMaxTargetSpeed() {
+        SimTestUtil.schedule(
+                scheduler,
+                drive.runRepeatedly(() -> drive.runFieldVelocity(new ChassisVelocities(4.5, 0.0, 8.0)))
+                        .named("Test.FastSpin"));
+        loops(2);
+        double fastest = 0.0;
+        for (var module : RobotConfigs.COMP.drive().kinematics().toSwerveModuleVelocities(io.robotVelocity)) {
+            fastest = Math.max(fastest, Math.abs(module.velocity));
+        }
+        assertEquals(4.5, fastest, 1e-9);
+        assertEquals(8.0 / 4.5, io.robotVelocity.omega / Math.hypot(io.robotVelocity.vx, io.robotVelocity.vy), 1e-9);
     }
 
     @Test

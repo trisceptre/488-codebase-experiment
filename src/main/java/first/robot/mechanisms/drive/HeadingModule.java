@@ -13,7 +13,7 @@ public final class HeadingModule {
     private static final double AT_HEADING_DEBOUNCE_SECONDS = 0.1;
 
     private final PIDController pid;
-    private final double maxOmegaRadPerSec;
+    private double maxOmegaRadPerSec;
     private Debouncer atHeadingDebouncer = newDebouncer();
     private double toleranceRad = Math.toRadians(2.0);
     private boolean atHeading = false;
@@ -30,6 +30,10 @@ public final class HeadingModule {
     public void setGains(double kP, double kD) {
         pid.setP(kP);
         pid.setD(kD);
+    }
+
+    public void setMaxOmega(double maxOmegaRadPerSec) {
+        this.maxOmegaRadPerSec = maxOmegaRadPerSec;
     }
 
     public void setTolerance(Rotation2d tolerance) {

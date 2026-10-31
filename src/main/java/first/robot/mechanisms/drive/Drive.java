@@ -14,7 +14,9 @@ import org.wpilib.math.filter.Debouncer;
 import org.wpilib.math.filter.SlewRateLimiter;
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.math.kinematics.ChassisVelocities;
+import org.wpilib.math.kinematics.SwerveDriveKinematics;
 import org.wpilib.math.kinematics.SwerveModulePosition;
+import org.wpilib.math.kinematics.SwerveModuleVelocity;
 import org.wpilib.system.Timer;
 import org.wpilib.util.Alert;
 
@@ -34,6 +36,7 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
     private final RobotState robotState;
     private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
     private final HeadingModule heading;
+    private final SwerveDriveKinematics kinematics;
     private final Debouncer[] moduleDebouncers;
     private final Alert[] moduleAlerts;
     private final Alert gyroAlert =
@@ -51,6 +54,13 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
             new LoggedTunableNumber("Drive/Joystick/PrecisionTranslation", 0.1);
     private final LoggedTunableNumber precisionRotation =
             new LoggedTunableNumber("Drive/Joystick/PrecisionRotation", 0.2);
+    private final LoggedTunableNumber drivingPowerScale =
+            new LoggedTunableNumber("Drive/Joystick/DrivingPowerScale", 1.0);
+    private final LoggedTunableNumber turningPowerScale =
+            new LoggedTunableNumber("Drive/Joystick/TurningPowerScale", 1.0);
+    private final LoggedTunableNumber maxTargetSpeed =
+            new LoggedTunableNumber("Drive/MaxTargetSpeedMetersPerSecond", 4.5);
+    private final LoggedTunableNumber maxTargetTurnRate = new LoggedTunableNumber("Drive/MaxTargetTurnRate", 8.0);
     private final LoggedTunableNumber headingKp = new LoggedTunableNumber("Drive/Heading/kP", 5.0);
     private final LoggedTunableNumber headingKd = new LoggedTunableNumber("Drive/Heading/kD", 0.0);
     private final LoggedTunableNumber headingToleranceDeg = new LoggedTunableNumber("Drive/Heading/ToleranceDeg", 2.0);
@@ -67,7 +77,8 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
         this.config = config;
         this.io = io;
         this.robotState = robotState;
-        this.heading = new HeadingModule(headingKp.get(), headingKd.get(), config.maxAngularSpeedRadPerSec());
+        this.kinematics = config.kinematics();
+        this.heading = new HeadingModule(headingKp.get(), headingKd.get(), maxTargetTurnRateRadPerSec());
         int n = config.moduleCount();
         lastModuleDistancesMeters = new double[n];
         moduleDebouncers = new Debouncer[n];
@@ -99,15 +110,7 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
     public Command joystickDrive(JoystickInputs sticks, BooleanSupplier precision) {
         return runRepeatedly(() -> {
                     var intent = shape(sticks, precision.getAsBoolean());
-                    double omega;
-                    if (intent.heading().isPresent() && canControlHeading()) {
-                        omega = heading.calculate(
-                                robotState.getRotation(), intent.heading().get());
-                    } else {
-                        heading.reset();
-                        omega = intent.omegaFraction() * config.maxAngularSpeedRadPerSec();
-                    }
-                    driveFraction(intent, omega);
+                    driveFraction(intent, stickOmega(intent));
                 })
                 .named("Drive.JoystickDrive");
     }
@@ -120,7 +123,7 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
                         omega = heading.calculate(robotState.getRotation(), angle.get());
                     } else {
                         heading.reset();
-                        omega = intent.omegaFraction() * config.maxAngularSpeedRadPerSec();
+                        omega = intent.omegaFraction() * maxTargetTurnRateRadPerSec();
                     }
                     driveFraction(intent, omega);
                 })
@@ -234,6 +237,7 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
         lastDropped = inputs.droppedOdometrySamples;
 
         heading.setGains(headingKp.get(), headingKd.get());
+        heading.setMaxOmega(maxTargetTurnRateRadPerSec());
         heading.setTolerance(Rotation2d.fromDegrees(headingToleranceDeg.get()));
     }
 
@@ -244,7 +248,8 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
             case IDLE -> io.idle();
             case X -> io.stopWithX();
             // rotate the translation vector into the robot coordinate frame
-            case VELOCITY -> io.setRobotVelocity(fieldVelocity.toRobotRelative(robotState.getRotation()));
+            case VELOCITY ->
+                io.setRobotVelocity(limitWheelVelocities(fieldVelocity.toRobotRelative(robotState.getRotation())));
         }
         Logger.recordOutput("Drive/Request", effective.name());
         Logger.recordOutput(
@@ -295,11 +300,35 @@ public final class Drive implements Mechanism, LoopParticipant, AutoCloseable {
                 settings);
     }
 
+    private double stickOmega(JoystickShaping.Intent intent) {
+        if (intent.heading().isPresent() && canControlHeading()) {
+            return heading.calculate(robotState.getRotation(), intent.heading().get());
+        }
+        heading.reset();
+        return intent.omegaFraction() * maxTargetTurnRateRadPerSec();
+    }
+
     private void driveFraction(JoystickShaping.Intent intent, double omegaRadPerSec) {
+        double speed = maxTargetSpeedMetersPerSec() * drivingPowerScale.get();
         runFieldVelocity(new ChassisVelocities(
-                intent.vxFraction() * config.maxLinearSpeedMetersPerSec(),
-                intent.vyFraction() * config.maxLinearSpeedMetersPerSec(),
-                omegaRadPerSec));
+                intent.vxFraction() * speed, intent.vyFraction() * speed, omegaRadPerSec * turningPowerScale.get()));
+    }
+
+    private double maxTargetSpeedMetersPerSec() {
+        return Math.min(maxTargetSpeed.get(), config.maxLinearSpeedMetersPerSec());
+    }
+
+    private double maxTargetTurnRateRadPerSec() {
+        return Math.min(maxTargetTurnRate.get(), config.maxAngularSpeedRadPerSec());
+    }
+
+    private ChassisVelocities limitWheelVelocities(ChassisVelocities robotVelocity) {
+        double fastest = 0.0;
+        for (SwerveModuleVelocity module : kinematics.toSwerveModuleVelocities(robotVelocity)) {
+            fastest = Math.max(fastest, Math.abs(module.velocity));
+        }
+        double limit = maxTargetSpeedMetersPerSec();
+        return fastest > limit ? robotVelocity.times(limit / fastest) : robotVelocity;
     }
 
     private static boolean connected(boolean[] flags, int index) {

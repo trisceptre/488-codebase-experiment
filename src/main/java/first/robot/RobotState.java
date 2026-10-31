@@ -1,5 +1,6 @@
 package first.robot;
 
+import first.robot.util.LoggedTunableBoolean;
 import first.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 import org.wpilib.command3.Command;
@@ -27,6 +28,8 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
     private final SwerveDriveOdometry odometry;
     private final LoggedTunableNumber visionTimeoutSeconds =
             new LoggedTunableNumber("RobotState/VisionTimeoutSeconds", 5.0);
+    private final LoggedTunableBoolean useVisionAssistedPose =
+            new LoggedTunableBoolean("RobotState/UseVisionAssistedPose", true);
     private final Alert noVisionAlert =
             new Alert("RobotState/NoVision", "No accepted vision recently; pose is odometry only", Alert.Level.MEDIUM);
     private double lastVisionTimestamp = Double.NEGATIVE_INFINITY;
@@ -52,7 +55,7 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
     }
 
     public Pose2d getEstimatedPose() {
-        return poseEstimator.getEstimatedPosition();
+        return useVisionAssistedPose.get() ? poseEstimator.getEstimatedPosition() : getOdometryPose();
     }
 
     public Pose2d getOdometryPose() {
