@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import first.robot.LoopParticipant;
@@ -98,10 +99,47 @@ class DriveTest {
 
     @Test
     void joystickDriveAtAngleReachesHeading() {
-        SimTestUtil.schedule(scheduler, drive.joystickDriveAtAngle(sticks, () -> Rotation2d.fromDegrees(45)));
+        SimTestUtil.schedule(
+                scheduler, drive.joystickDriveAtAngle(sticks, () -> Rotation2d.fromDegrees(45), () -> true));
         loops(100);
         assertTrue(drive.atHeading());
         assertEquals(45.0, robotState.getRotation().getDegrees(), 3.0);
+    }
+
+    @Test
+    void joystickDriveAtAngleUsesSticksWhenNotAiming() {
+        SimTestUtil.schedule(
+                scheduler, drive.joystickDriveAtAngle(sticks, () -> Rotation2d.fromDegrees(45), () -> false));
+        loops(100);
+        assertEquals(0.0, robotState.getRotation().getDegrees(), 1e-6);
+    }
+
+    @Test
+    void fullStickDrivesAtMaxTargetSpeed() {
+        SimTestUtil.schedule(scheduler, drive.joystickDrive(sticks, () -> false));
+        axes[1] = -1.0;
+        loops(2);
+        assertEquals(4.5, io.robotVelocity.vxMetersPerSecond, 1e-9);
+    }
+
+    @Test
+    void fullTriggerTurnsAtMaxTargetTurnRate() {
+        SimTestUtil.schedule(scheduler, drive.joystickDrive(sticks, () -> false));
+        axes[2] = 1.0;
+        loops(2);
+        assertEquals(8.0, io.robotVelocity.omegaRadiansPerSecond, 1e-9);
+    }
+
+    @Test
+    void wheelSpeedsStayUnderMaxTargetSpeed() {
+        SimTestUtil.schedule(scheduler, drive.run(() -> drive.runRobotVelocity(new ChassisSpeeds(4.5, 0.0, 8.0))));
+        loops(2);
+        double fastest = 0.0;
+        for (var state : RobotConfigs.COMP_2026.drive().kinematics().toSwerveModuleStates(io.robotVelocity)) {
+            fastest = Math.max(fastest, Math.abs(state.speedMetersPerSecond));
+        }
+        assertEquals(4.5, fastest, 1e-9);
+        assertEquals(8.0 / 4.5, io.robotVelocity.omegaRadiansPerSecond / io.robotVelocity.vxMetersPerSecond, 1e-9);
     }
 
     @Test

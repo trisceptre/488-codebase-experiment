@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import first.robot.RobotState;
 import first.robot.subsystems.drive.Drive;
 import first.robot.subsystems.drive.JoystickInputs;
+import first.robot.util.LoggedTunableBoolean;
 import first.robot.util.LoggedTunableNumber;
 
 public final class GameCommands {
@@ -23,6 +24,8 @@ public final class GameCommands {
     private final AprilTagFieldLayout field;
     private final ShotCalculator shots;
     private final LoggedTunableNumber aimToleranceDeg = new LoggedTunableNumber("Aim/ToleranceDeg", 3.0);
+    private final LoggedTunableBoolean autoAimWhenNotInZone =
+            new LoggedTunableBoolean("Aim/AutoAimWhenNotInZone", true);
 
     public GameCommands(
             GameMechanisms mechanisms,
@@ -108,7 +111,8 @@ public final class GameCommands {
     }
 
     public Command rotateToHub(JoystickInputs sticks) {
-        return drive.joystickDriveAtAngle(sticks, this::hubHeading).withName("RotateToHub");
+        return drive.joystickDriveAtAngle(sticks, this::hubHeading, this::shouldAimAtHub)
+                .withName("RotateToHub");
     }
 
     public Command aimAndShootFromHere(JoystickInputs sticks) {
@@ -121,6 +125,11 @@ public final class GameCommands {
         var hub = Landmarks.allianceHub(field, alliance()).getTranslation();
         var robot = robotState.getEstimatedPose().getTranslation();
         return hub.minus(robot).getAngle().plus(Rotation2d.k180deg);
+    }
+
+    public boolean shouldAimAtHub() {
+        return autoAimWhenNotInZone.get()
+                || Landmarks.isInAllianceZone(field, alliance(), robotState.getEstimatedPose());
     }
 
     public boolean isFacingHub() {
