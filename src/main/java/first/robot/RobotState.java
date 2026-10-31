@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import first.robot.util.LoggedTunableBoolean;
 import first.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
@@ -28,6 +29,8 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
     private final SwerveDriveOdometry odometry;
     private final LoggedTunableNumber visionTimeoutSeconds =
             new LoggedTunableNumber("RobotState/VisionTimeoutSeconds", 5.0);
+    private final LoggedTunableBoolean useVisionAssistedPose =
+            new LoggedTunableBoolean("RobotState/UseVisionAssistedPose", true);
     private final Alert noVisionAlert =
             new Alert("No accepted vision recently; pose is odometry only", Alert.AlertType.kWarning);
     private double lastVisionTimestamp = Double.NEGATIVE_INFINITY;
@@ -53,7 +56,7 @@ public final class RobotState implements LoopParticipant, AutoCloseable {
     }
 
     public Pose2d getEstimatedPose() {
-        return poseEstimator.getEstimatedPosition();
+        return useVisionAssistedPose.get() ? poseEstimator.getEstimatedPosition() : getOdometryPose();
     }
 
     public Pose2d getOdometryPose() {
