@@ -53,9 +53,9 @@
     "javax.swing.*",
     "javax.management.*",
     "javax.smartcardio.*",
-    "org.wpilib.math.proto.*",
-    "org.wpilib.math.**.proto.*",
-    "org.wpilib.math.**.struct.*",
+    "edu.wpi.first.math.proto.*",
+    "edu.wpi.first.math.**.proto.*",
+    "edu.wpi.first.math.**.struct.*",
   ],
   "java.debug.settings.enableRunDebugCodeLens": false,
   "java.dependency.enableDependencyCheckup": false
