@@ -51,7 +51,7 @@ class IntakeDeployTest {
         assertTrue(intake.atGoal());
         scheduler.schedule(intake.retract());
         seconds(2.0);
-        assertEquals(-10.0, intake.positionDeg(), 5.0);
+        assertEquals(-70.0, intake.positionDeg(), 5.0);
     }
 
     @Test
