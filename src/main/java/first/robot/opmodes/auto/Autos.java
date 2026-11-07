@@ -24,10 +24,15 @@ import java.util.Optional;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public final class Autos {
-    public static final List<String> UNREGISTERED = List.of("IntakeDeployRetract");
-
-    public static final List<String> AUTOS =
-            List.of("HubToDepoToTower", "NormalBumpAutoLeft", "NormalBumpAutoRight", "NoEventMarkerBumpAuto");
+    public static final List<String> AUTOS = List.of(
+            "HubToDepoToTower",
+            "NormalBumpAutoLeft",
+            "NormalBumpAutoRight",
+            "NoEventMarkerBumpAuto",
+            "TwoLoopRightTrenchAuto",
+            "TwoLoopLeftTrenchAuto",
+            "TwoLoopRightBumpAuto",
+            "TwoLoopLeftBumpAuto");
 
     private static final double ROBOT_MASS_KG = 49.8951607;
     private static final double ROBOT_MOI_KG_M2 = 6.883;
@@ -66,10 +71,14 @@ public final class Autos {
     private static void registerNamedCommands(GameCommands game) {
         var m = game.mechanisms();
         NamedCommands.registerCommand("IntakeDeployExtend", m.intakeDeploy().extend());
+        NamedCommands.registerCommand("IntakeDeployRetract", m.intakeDeploy().retract());
         NamedCommands.registerCommand("CollectorIntake", m.collector().intake());
         NamedCommands.registerCommand("WarmupShooterNear", game.prepareToShoot(PresetDistance.NEAR));
         NamedCommands.registerCommand("FireWhenShooterAndHoodReady", game.fireWhenReady());
         NamedCommands.registerCommand("WaitForRotationAndHoodAndShooterToBeAtGoal", game.waitForShooterHoodAndAim());
+        // The path files' event markers use this longer name.
+        NamedCommands.registerCommand(
+                "WaitForRotationAndHoodAndShooterToBeAtGoalCommandGroup", game.waitForShooterHoodAndAim());
         NamedCommands.registerCommand("AimAndShootFromHere", game.aimAndShootFromHere(JoystickInputs.NONE));
     }
 
