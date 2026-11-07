@@ -72,7 +72,7 @@ class AutosTest {
     void everyNamedCommandInThePathPlannerFilesIsRegistered() throws IOException {
         Set<String> missing = new TreeSet<>();
         for (String name : namedCommandsInDeployFiles()) {
-            if (!NamedCommands.hasCommand(name) && !Autos.UNREGISTERED.contains(name)) {
+            if (!NamedCommands.hasCommand(name)) {
                 missing.add(name);
             }
         }
