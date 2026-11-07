@@ -12,6 +12,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import first.robot.RobotState;
 import first.robot.game.GameCommands;
@@ -61,7 +62,7 @@ public final class Autos {
             chooser.addOption(name, AutoBuilder.buildAuto(name));
         }
         // Additionally warm up PathPlanner (not sure how necessary it is)
-        FollowPathCommand.warmupCommand().schedule();
+        CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
     }
 
     public Command selected() {
