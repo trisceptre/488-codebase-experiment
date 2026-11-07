@@ -23,8 +23,8 @@ public final class IntakeDeploy implements Subsystem, LoopParticipant, AutoClose
     private final IntakeDeployIO io;
     private final IntakeDeployIOInputsAutoLogged inputs = new IntakeDeployIOInputsAutoLogged();
 
-    private final LoggedTunableNumber extendedDeg = new LoggedTunableNumber("IntakeDeploy/ExtendedDeg", -145.0);
-    private final LoggedTunableNumber retractedDeg = new LoggedTunableNumber("IntakeDeploy/RetractedDeg", -10.0);
+    private final LoggedTunableNumber extendedDeg = new LoggedTunableNumber("IntakeDeploy/ExtendedDeg", -205.0);
+    private final LoggedTunableNumber retractedDeg = new LoggedTunableNumber("IntakeDeploy/RetractedDeg", -70.0);
     private final LoggedTunableNumber manualPower = new LoggedTunableNumber("IntakeDeploy/ManualPower", 0.2);
     private final LoggedTunableNumber toleranceDeg = new LoggedTunableNumber("IntakeDeploy/ToleranceDeg", 5.0);
     private final LoggedTunableNumber readinessTimeout =
