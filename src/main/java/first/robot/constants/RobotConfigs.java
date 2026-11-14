@@ -3,9 +3,9 @@ package first.robot.constants;
 import static org.wpilib.units.Units.Inches;
 import static org.wpilib.units.Units.MetersPerSecond;
 
+import first.lib.drive.SwerveConfig;
+import first.lib.vision.CameraInfo;
 import first.robot.generated.TunerConstants;
-import first.robot.mechanisms.drive.SwerveConfig;
-import first.robot.vision.CameraInfo;
 import java.util.List;
 import org.wpilib.fields.Fields;
 import org.wpilib.hardware.bus.CANPort;

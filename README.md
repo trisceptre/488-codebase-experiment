@@ -1,5 +1,3 @@
-# Robot Template
-
 ## Pre-season Checklist
 
 1. **WPILib & vendordeps**: bump GradleRIO, `wpilibYear`, `projectYear`, and update vendordeps.
