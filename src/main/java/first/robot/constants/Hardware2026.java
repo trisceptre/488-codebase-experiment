@@ -2,14 +2,14 @@ package first.robot.constants;
 
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
+import first.lib.motor.CANId;
+import first.lib.motor.MotorConfig;
+import first.lib.motor.MotorConfig.CurrentLimits;
+import first.lib.motor.MotorConfig.Gains;
+import first.lib.motor.MotorConfig.GravityType;
+import first.lib.motor.MotorConfig.Shaping;
+import first.lib.motor.MotorConfig.SimModel;
 import first.robot.subsystems.intake.IntakeDeployConfig;
-import first.robot.util.motor.CANId;
-import first.robot.util.motor.MotorConfig;
-import first.robot.util.motor.MotorConfig.CurrentLimits;
-import first.robot.util.motor.MotorConfig.Gains;
-import first.robot.util.motor.MotorConfig.GravityType;
-import first.robot.util.motor.MotorConfig.Shaping;
-import first.robot.util.motor.MotorConfig.SimModel;
 import java.util.List;
 import java.util.Optional;
 

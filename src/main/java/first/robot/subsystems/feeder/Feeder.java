@@ -6,11 +6,11 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
-import first.robot.LoopParticipant;
-import first.robot.util.LoggedTunableNumber;
-import first.robot.util.motor.MotorConfig;
-import first.robot.util.motor.MotorIO;
-import first.robot.util.motor.VelocityControl;
+import first.lib.LoopParticipant;
+import first.lib.motor.MotorConfig;
+import first.lib.motor.MotorIO;
+import first.lib.motor.VelocityControl;
+import first.lib.util.LoggedTunableNumber;
 
 public final class Feeder implements Subsystem, LoopParticipant, AutoCloseable {
     private static final double NOMINAL_VOLTS = 12.0;

@@ -1,7 +1,7 @@
 package first.robot.constants;
 
+import first.lib.motor.MotorConfig;
 import first.robot.subsystems.intake.IntakeDeployConfig;
-import first.robot.util.motor.MotorConfig;
 import java.util.List;
 import java.util.Optional;
 

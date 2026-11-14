@@ -6,11 +6,11 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import first.robot.RobotState;
-import first.robot.subsystems.drive.Drive;
-import first.robot.subsystems.drive.JoystickInputs;
-import first.robot.util.LoggedTunableBoolean;
-import first.robot.util.LoggedTunableNumber;
+import first.lib.RobotState;
+import first.lib.drive.Drive;
+import first.lib.drive.JoystickInputs;
+import first.lib.util.LoggedTunableBoolean;
+import first.lib.util.LoggedTunableNumber;
 
 public final class GameCommands {
     public enum Target {

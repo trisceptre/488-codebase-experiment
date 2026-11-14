@@ -3,8 +3,8 @@ package first.robot.game;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import edu.wpi.first.wpilibj.util.Color;
-import first.robot.subsystems.lights.LightPattern;
-import first.robot.subsystems.lights.LightPattern.Bounce;
+import first.lib.lights.LightPattern;
+import first.lib.lights.LightPattern.Bounce;
 import org.junit.jupiter.api.Test;
 
 class StatusLightsTest {

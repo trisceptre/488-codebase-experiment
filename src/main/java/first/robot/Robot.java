@@ -6,6 +6,28 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import first.lib.LoopParticipant;
+import first.lib.RobotState;
+import first.lib.drive.Drive;
+import first.lib.drive.DriveIO;
+import first.lib.drive.DriveIOCTRE;
+import first.lib.drive.DriveIOCTRESim;
+import first.lib.lights.Lights;
+import first.lib.lights.LightsIO;
+import first.lib.lights.LightsIOCANdle;
+import first.lib.lights.LightsIOSim;
+import first.lib.power.PowerIO;
+import first.lib.power.PowerIOPDH;
+import first.lib.power.PowerIOSim;
+import first.lib.power.VoltageMonitor;
+import first.lib.util.LoggedTracer;
+import first.lib.util.NoFMSNT4Publisher;
+import first.lib.util.PhoenixUtil;
+import first.lib.vision.CameraInfo;
+import first.lib.vision.Vision;
+import first.lib.vision.VisionIO;
+import first.lib.vision.VisionIOPhotonVision;
+import first.lib.vision.VisionIOPhotonVisionSim;
 import first.robot.constants.Constants;
 import first.robot.constants.DriverConstants;
 import first.robot.constants.RobotConfig;
@@ -18,25 +40,6 @@ import first.robot.game.StatusLights;
 import first.robot.opmodes.auto.Autos;
 import first.robot.opmodes.teleop.TeleopBindings;
 import first.robot.sim.FuelSim;
-import first.robot.subsystems.drive.Drive;
-import first.robot.subsystems.drive.DriveIO;
-import first.robot.subsystems.drive.DriveIOCTRE;
-import first.robot.subsystems.drive.DriveIOCTRESim;
-import first.robot.subsystems.lights.Lights;
-import first.robot.subsystems.lights.LightsIO;
-import first.robot.subsystems.lights.LightsIOCANdle;
-import first.robot.util.LoggedTracer;
-import first.robot.util.NoFMSNT4Publisher;
-import first.robot.util.PhoenixUtil;
-import first.robot.util.power.PowerIO;
-import first.robot.util.power.PowerIOPDH;
-import first.robot.util.power.PowerIOSim;
-import first.robot.util.power.VoltageMonitor;
-import first.robot.vision.CameraInfo;
-import first.robot.vision.Vision;
-import first.robot.vision.VisionIO;
-import first.robot.vision.VisionIOPhotonVision;
-import first.robot.vision.VisionIOPhotonVisionSim;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -141,7 +144,8 @@ public class Robot extends LoggedRobot {
                         .filter(candle -> Constants.currentMode == Constants.Mode.REAL)
                         .<LightsIO>map(candle -> new LightsIOCANdle(
                                 candle.canId(), candle.bus(), candle.segments(), candle.brightness()))
-                        .orElseGet(() -> new LightsIO() {}),
+                        .orElseGet(() ->
+                                Constants.currentMode == Constants.Mode.SIM ? new LightsIOSim() : new LightsIO() {}),
                 config.lights().map(candle -> candle.segments().size()).orElse(1));
         PowerIO powerIO = switch (Constants.currentMode) {
             case REAL -> new PowerIOPDH(config.pdhCanId());

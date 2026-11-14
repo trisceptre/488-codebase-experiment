@@ -17,8 +17,8 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Alert;
-import first.robot.util.PhoenixUtil;
-import first.robot.util.motor.MotorIOTalonFX;
+import first.lib.motor.MotorIOTalonFX;
+import first.lib.util.PhoenixUtil;
 
 public class IntakeDeployIOTalonFX implements IntakeDeployIO, AutoCloseable {
     private static final int CONFIG_ATTEMPTS = 3;

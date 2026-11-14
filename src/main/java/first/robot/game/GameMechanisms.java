@@ -1,7 +1,11 @@
 package first.robot.game;
 
 import edu.wpi.first.math.util.Units;
-import first.robot.LoopParticipant;
+import first.lib.LoopParticipant;
+import first.lib.motor.MotorConfig;
+import first.lib.motor.MotorIO;
+import first.lib.motor.MotorIOSim;
+import first.lib.motor.MotorIOTalonFX;
 import first.robot.constants.Constants;
 import first.robot.constants.Superstructure;
 import first.robot.subsystems.climber.Climber;
@@ -18,10 +22,6 @@ import first.robot.subsystems.intake.IntakeDeployIO;
 import first.robot.subsystems.intake.IntakeDeployIOSim;
 import first.robot.subsystems.intake.IntakeDeployIOTalonFX;
 import first.robot.subsystems.shooter.Shooter;
-import first.robot.util.motor.MotorConfig;
-import first.robot.util.motor.MotorIO;
-import first.robot.util.motor.MotorIOSim;
-import first.robot.util.motor.MotorIOTalonFX;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

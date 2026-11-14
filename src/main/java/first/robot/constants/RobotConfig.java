@@ -1,8 +1,8 @@
 package first.robot.constants;
 
 import edu.wpi.first.apriltag.AprilTagFields;
-import first.robot.subsystems.drive.SwerveConfig;
-import first.robot.vision.CameraInfo;
+import first.lib.drive.SwerveConfig;
+import first.lib.vision.CameraInfo;
 import java.util.List;
 import java.util.Optional;
 

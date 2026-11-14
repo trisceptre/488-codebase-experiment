@@ -8,10 +8,10 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import first.lib.drive.SwerveConfig;
+import first.lib.vision.CameraInfo;
 import first.robot.generated.TunerConstants;
 import first.robot.generated.TunerConstants2025;
-import first.robot.subsystems.drive.SwerveConfig;
-import first.robot.vision.CameraInfo;
 import java.util.List;
 import java.util.Optional;
 

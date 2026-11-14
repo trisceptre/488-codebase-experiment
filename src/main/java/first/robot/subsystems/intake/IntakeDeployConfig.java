@@ -1,6 +1,6 @@
 package first.robot.subsystems.intake;
 
-import first.robot.util.motor.CANId;
+import first.lib.motor.CANId;
 
 public record IntakeDeployConfig(
         CANId motor,

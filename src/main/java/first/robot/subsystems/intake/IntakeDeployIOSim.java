@@ -7,7 +7,7 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
-import first.robot.util.motor.MotorIOSim;
+import first.lib.motor.MotorIOSim;
 
 public class IntakeDeployIOSim implements IntakeDeployIO {
     private static final double GEARING = 60.0;

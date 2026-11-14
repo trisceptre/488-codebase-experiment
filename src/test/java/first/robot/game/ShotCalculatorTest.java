@@ -14,7 +14,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
-import first.robot.testing.SimTestUtil;
+import first.lib.testing.SimTestUtil;
 import java.io.File;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;

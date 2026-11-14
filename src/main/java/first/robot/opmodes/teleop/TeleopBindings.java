@@ -1,11 +1,11 @@
 package first.robot.opmodes.teleop;
 
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import first.robot.RobotState;
+import first.lib.RobotState;
+import first.lib.drive.Drive;
+import first.lib.drive.JoystickInputs;
 import first.robot.game.GameCommands;
 import first.robot.game.ShotCalculator.PresetDistance;
-import first.robot.subsystems.drive.Drive;
-import first.robot.subsystems.drive.JoystickInputs;
 import java.util.Optional;
 
 public final class TeleopBindings {

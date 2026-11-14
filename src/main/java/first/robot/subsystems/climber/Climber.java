@@ -1,17 +1,15 @@
 package first.robot.subsystems.climber;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
-import first.robot.LoopParticipant;
-import first.robot.util.LoggedTunableNumber;
-import first.robot.util.motor.MotorConfig;
-import first.robot.util.motor.MotorIO;
-import first.robot.util.motor.PositionControl;
+import first.lib.LoopParticipant;
+import first.lib.motor.MotorConfig;
+import first.lib.motor.MotorIO;
+import first.lib.motor.PositionControl;
+import first.lib.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 public final class Climber implements Subsystem, LoopParticipant, AutoCloseable {
@@ -28,7 +26,6 @@ public final class Climber implements Subsystem, LoopParticipant, AutoCloseable 
             new LoggedTunableNumber("Climber/ReadinessTimeoutSeconds", 3.0);
 
     private boolean calibrated = false;
-    private double offsetRad = 0.0;
     private double goalDeg = 0.0;
 
     public Climber(MotorConfig config, MotorIO motorIO, ClimberIO io) {
@@ -52,7 +49,15 @@ public final class Climber implements Subsystem, LoopParticipant, AutoCloseable 
     }
 
     public Command retractOpenLoop() {
-        return run(() -> motors.runVoltage(retractPower.get() * NOMINAL_VOLTS)).withName("Climber.RetractOpenLoop");
+        return run(() -> {
+                    double volts = retractPower.get() * NOMINAL_VOLTS;
+                    if (calibrated) {
+                        motors.runVoltage(volts);
+                    } else {
+                        motors.runCalibrationVoltage(volts);
+                    }
+                })
+                .withName("Climber.RetractOpenLoop");
     }
 
     public Command goTo(double degrees) {
@@ -76,7 +81,7 @@ public final class Climber implements Subsystem, LoopParticipant, AutoCloseable 
     }
 
     public double angleDeg() {
-        return Units.radiansToDegrees(motors.position().in(Radians) - offsetRad);
+        return motors.position().in(Degrees);
     }
 
     @Override
@@ -85,9 +90,10 @@ public final class Climber implements Subsystem, LoopParticipant, AutoCloseable 
         Logger.processInputs("Climber", inputs);
         motors.updateInputs();
         if (inputs.atRetractedLimit && !calibrated) {
-            offsetRad = motors.position().in(Radians);
-            goalDeg = 0.0;
-            calibrated = true;
+            calibrated = motors.seedPosition(Degrees.of(0.0));
+            if (calibrated) {
+                goalDeg = 0.0;
+            }
         }
     }
 
@@ -101,7 +107,7 @@ public final class Climber implements Subsystem, LoopParticipant, AutoCloseable 
 
     private void holdGoal() {
         if (calibrated) {
-            motors.setGoal(Radians.of(Units.degreesToRadians(goalDeg) + offsetRad));
+            motors.setGoal(Degrees.of(goalDeg));
         } else {
             motors.stop();
         }
