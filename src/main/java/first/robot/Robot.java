@@ -1,28 +1,31 @@
 package first.robot;
 
+import first.lib.LoopParticipant;
+import first.lib.RobotState;
+import first.lib.drive.Drive;
+import first.lib.drive.DriveIO;
+import first.lib.drive.DriveIOCTRE;
+import first.lib.drive.DriveIOCTRESim;
+import first.lib.lights.Lights;
+import first.lib.lights.LightsIO;
+import first.lib.lights.LightsIOCANdle;
+import first.lib.lights.LightsIOSim;
+import first.lib.power.PowerIO;
+import first.lib.power.PowerIOPDH;
+import first.lib.power.PowerIOSim;
+import first.lib.power.VoltageMonitor;
+import first.lib.util.LoggedTracer;
+import first.lib.util.PhoenixUtil;
+import first.lib.vision.CameraInfo;
+import first.lib.vision.Vision;
+import first.lib.vision.VisionIO;
+import first.lib.vision.VisionIOPhotonVision;
+import first.lib.vision.VisionIOPhotonVisionSim;
 import first.robot.constants.Constants;
 import first.robot.constants.DriverConstants;
 import first.robot.constants.RobotConfig;
 import first.robot.constants.RobotConfigs;
 import first.robot.constants.RobotIdentity;
-import first.robot.mechanisms.drive.Drive;
-import first.robot.mechanisms.drive.DriveIO;
-import first.robot.mechanisms.drive.DriveIOCTRE;
-import first.robot.mechanisms.drive.DriveIOCTRESim;
-import first.robot.mechanisms.lights.Lights;
-import first.robot.mechanisms.lights.LightsIO;
-import first.robot.mechanisms.lights.LightsIOCANdle;
-import first.robot.util.LoggedTracer;
-import first.robot.util.PhoenixUtil;
-import first.robot.util.power.PowerIO;
-import first.robot.util.power.PowerIOPDH;
-import first.robot.util.power.PowerIOSim;
-import first.robot.util.power.VoltageMonitor;
-import first.robot.vision.CameraInfo;
-import first.robot.vision.Vision;
-import first.robot.vision.VisionIO;
-import first.robot.vision.VisionIOPhotonVision;
-import first.robot.vision.VisionIOPhotonVisionSim;
 import java.util.ArrayList;
 import java.util.List;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -125,10 +128,12 @@ public class Robot extends LoggedOpModeRobot {
         }
         Vision vision = new Vision(config.cameras(), cameraIOs, field, robotState);
 
-        Lights lights = new Lights(
-                Constants.currentMode == Constants.Mode.REAL
-                        ? new LightsIOCANdle(config.candleId(), config.candleBus(), config.candleLedCount())
-                        : new LightsIO() {});
+        LightsIO lightsIO = switch (Constants.currentMode) {
+            case REAL -> new LightsIOCANdle(config.candleId(), config.candleBus(), config.candleLedCount());
+            case SIM -> new LightsIOSim();
+            case REPLAY -> new LightsIO() {};
+        };
+        Lights lights = new Lights(lightsIO);
         PowerIO powerIO = switch (Constants.currentMode) {
             case REAL -> new PowerIOPDH(config.pdhPort());
             case SIM -> new PowerIOSim();

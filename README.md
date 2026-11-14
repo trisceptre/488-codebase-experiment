@@ -1,5 +1,10 @@
 # Robot Template
 
+## Layout
+
+- `first.lib`: reusable code (motor control, drive, vision, lights, power, tunables). It never imports `first.robot`; `LibBoundaryTest` enforces this.
+- `first.robot`: this year's robot (`Robot`, `constants`, `generated`, `opmodes`, and game mechanisms under `mechanisms`).
+
 ## Pre-season Checklist
 
 1. **WPILib & vendordeps**: bump GradleRIO, `wpilibYear`, `projectYear`, and update vendordeps.

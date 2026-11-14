@@ -1,7 +1,7 @@
 package first.robot.opmodes.teleop;
 
+import first.lib.drive.JoystickInputs;
 import first.robot.Robot;
-import first.robot.mechanisms.drive.JoystickInputs;
 import org.wpilib.opmode.OpMode;
 import org.wpilib.opmode.Teleop;
 
